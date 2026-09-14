@@ -2205,4 +2205,4 @@ h1 {
 .impact-table th, .impact-table td { text-align: left; padding: 12px; border-bottom: 1px solid #d9e3e4; min-width: 110px; }
 .impact-table thead { background: #edf4f4; }
 .community-impact details { line-height: 1.6; }
-.browse-card > .chip { margin-left: 10px; }
+.browse-card > .btn-primary + .btn-primary { margin-top: 10px; }

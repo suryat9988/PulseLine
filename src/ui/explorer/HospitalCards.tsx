@@ -157,7 +157,7 @@ export function HospitalCards({
         <button type="button" className="btn-primary" onClick={() => onViewFinancials(hospital.hospitalId)}>
           View financials
         </button>
-        <button type="button" className="chip" onClick={() => onViewImpact(hospital.hospitalId)}>
+        <button type="button" className="btn-primary" onClick={() => onViewImpact(hospital.hospitalId)}>
           View community impact
         </button>
       </article>
