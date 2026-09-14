@@ -1,0 +1,258 @@
+{
+  "schema_version": "1.0",
+  "description": "Official emergency-service evidence and unranked alternative candidates for five PulseLine hospitals. No route estimates or closure predictions.",
+  "observations": [
+    {
+      "hospital_id": "case_paul_b_hall",
+      "hospital": {
+        "name": "Paintsville ARH Hospital",
+        "address": "625 James Trimble Boulevard, Paintsville, KY 41240",
+        "address_source_url": "https://providers.arh.org/location/paintsville-arh-hospital/loc0000131084",
+        "service": "Emergency care",
+        "service_evidence": "Emergency department listed",
+        "source_url": "https://providers.arh.org/location/paintsville-arh-hospital/loc0000131084",
+        "accessed_at": "2026-09-14",
+        "reporting_period": "Current website observation on access date; historical availability not established",
+        "publication_date": null,
+        "scope": "individual hospital",
+        "value_type": "verified website observation",
+        "limitations": "Official website evidence, not an independent operational inspection. Emergency-service presence does not establish equal specialist capability or available capacity."
+      },
+      "candidate": {
+        "name": "Highlands ARH Regional Medical Center",
+        "address": "5000 KY Route 321, Prestonsburg, KY 41653",
+        "address_source_url": "https://providers.arh.org/location/highlands-arh-regional-medical-center/loc0000132808",
+        "source_url": "https://providers.arh.org/location/highlands-arh-regional-medical-center/loc0000132808",
+        "service": "Emergency care",
+        "service_evidence": "Emergency care/department listed on official source",
+        "accessed_at": "2026-09-14",
+        "reporting_period": "Current website observation on access date; historical availability not established",
+        "publication_date": null,
+        "scope": "individual hospital",
+        "value_type": "verified website observation",
+        "limitations": "Official website evidence, not an independent operational inspection. Emergency-service presence does not establish equal specialist capability or available capacity."
+      },
+      "candidate_selection": {
+        "status": "research candidate only",
+        "nearest_verified": false,
+        "equivalent_capabilities_verified": false,
+        "capacity": null,
+        "limitations": "Candidates have not been ranked by road routes. Search additional hospitals, including across county and state boundaries."
+      },
+      "travel": {
+        "community_origin": null,
+        "road_miles_to_candidate": null,
+        "additional_miles": null,
+        "drive_minutes": null,
+        "calculated_at": null,
+        "status": "not calculated"
+      }
+    },
+    {
+      "hospital_id": "case_highlands",
+      "hospital": {
+        "name": "Highlands ARH Regional Medical Center",
+        "address": "5000 KY Route 321, Prestonsburg, KY 41653",
+        "address_source_url": "https://providers.arh.org/location/highlands-arh-regional-medical-center/loc0000132808",
+        "service": "Emergency care",
+        "service_evidence": "Emergency department and Level IV Trauma Center listed",
+        "source_url": "https://providers.arh.org/location/highlands-arh-regional-medical-center/loc0000132808",
+        "accessed_at": "2026-09-14",
+        "reporting_period": "Current website observation on access date; historical availability not established",
+        "publication_date": null,
+        "scope": "individual hospital",
+        "value_type": "verified website observation",
+        "limitations": "Official website evidence, not an independent operational inspection. Emergency-service presence does not establish equal specialist capability or available capacity."
+      },
+      "candidate": {
+        "name": "Paintsville ARH Hospital",
+        "address": "625 James Trimble Boulevard, Paintsville, KY 41240",
+        "address_source_url": "https://providers.arh.org/location/paintsville-arh-hospital/loc0000131084",
+        "source_url": "https://providers.arh.org/location/paintsville-arh-hospital/loc0000131084",
+        "service": "Emergency care",
+        "service_evidence": "Emergency care/department listed on official source",
+        "accessed_at": "2026-09-14",
+        "reporting_period": "Current website observation on access date; historical availability not established",
+        "publication_date": null,
+        "scope": "individual hospital",
+        "value_type": "verified website observation",
+        "limitations": "Official website evidence, not an independent operational inspection. Emergency-service presence does not establish equal specialist capability or available capacity."
+      },
+      "candidate_selection": {
+        "status": "research candidate only",
+        "nearest_verified": false,
+        "equivalent_capabilities_verified": false,
+        "capacity": null,
+        "limitations": "Candidates have not been ranked by road routes. Search additional hospitals, including across county and state boundaries."
+      },
+      "travel": {
+        "community_origin": null,
+        "road_miles_to_candidate": null,
+        "additional_miles": null,
+        "drive_minutes": null,
+        "calculated_at": null,
+        "status": "not calculated"
+      }
+    },
+    {
+      "hospital_id": "KY-LIC-100620",
+      "hospital": {
+        "name": "Kentucky River Medical Center",
+        "address": "540 Jett Drive, Jackson, KY 41339",
+        "address_source_url": "https://kentuckyrivermc.com/contact-us/",
+        "service": "Emergency care",
+        "service_evidence": "24/7 emergency care stated",
+        "source_url": "https://kentuckyrivermc.com/er/",
+        "accessed_at": "2026-09-14",
+        "reporting_period": "Current website observation on access date; historical availability not established",
+        "publication_date": null,
+        "scope": "individual hospital",
+        "value_type": "verified website observation",
+        "limitations": "Official website evidence, not an independent operational inspection. Emergency-service presence does not establish equal specialist capability or available capacity."
+      },
+      "candidate": {
+        "name": "Hazard ARH Regional Medical Center",
+        "address": "100 Medical Center Drive, Hazard, KY 41701",
+        "address_source_url": "https://providers.arh.org/location/hazard-arh-regional-medical-center/loc0000132791",
+        "source_url": "https://providers.arh.org/location/hazard-arh-regional-medical-center/loc0000132791",
+        "service": "Emergency care",
+        "service_evidence": "Emergency care/department listed on official source",
+        "accessed_at": "2026-09-14",
+        "reporting_period": "Current website observation on access date; historical availability not established",
+        "publication_date": null,
+        "scope": "individual hospital",
+        "value_type": "verified website observation",
+        "limitations": "Official website evidence, not an independent operational inspection. Emergency-service presence does not establish equal specialist capability or available capacity."
+      },
+      "candidate_selection": {
+        "status": "research candidate only",
+        "nearest_verified": false,
+        "equivalent_capabilities_verified": false,
+        "capacity": null,
+        "limitations": "Candidates have not been ranked by road routes. Search additional hospitals, including across county and state boundaries."
+      },
+      "travel": {
+        "community_origin": null,
+        "road_miles_to_candidate": null,
+        "additional_miles": null,
+        "drive_minutes": null,
+        "calculated_at": null,
+        "status": "not calculated"
+      }
+    },
+    {
+      "hospital_id": "KY-LIC-600070",
+      "hospital": {
+        "name": "Breckinridge Memorial Hospital",
+        "address": "1011 Old Highway 60, Hardinsburg, KY 40143",
+        "address_source_url": "https://www.mybreckhealth.org/walk-in",
+        "service": "Emergency care",
+        "service_evidence": "24/7 emergency department stated",
+        "source_url": "https://www.mybreckhealth.org/bmh",
+        "accessed_at": "2026-09-14",
+        "reporting_period": "Current website observation on access date; historical availability not established",
+        "publication_date": null,
+        "scope": "individual hospital",
+        "value_type": "verified website observation",
+        "limitations": "Official website evidence, not an independent operational inspection. Emergency-service presence does not establish equal specialist capability or available capacity."
+      },
+      "candidate": {
+        "name": "Owensboro Health Twin Lakes Medical Center",
+        "address": "910 Wallace Avenue, Leitchfield, KY 42754",
+        "address_source_url": "https://www.owensborohealth.org/sites/default/files/documents/owensboro-health-directory.pdf",
+        "source_url": "https://webside.owensborohealth.org/services/emergency-department",
+        "service": "Emergency care",
+        "service_evidence": "Emergency care/department listed on official source",
+        "accessed_at": "2026-09-14",
+        "reporting_period": "Current website observation on access date; historical availability not established",
+        "publication_date": null,
+        "scope": "individual hospital",
+        "value_type": "verified website observation",
+        "limitations": "Official website evidence, not an independent operational inspection. Emergency-service presence does not establish equal specialist capability or available capacity."
+      },
+      "candidate_selection": {
+        "status": "research candidate only",
+        "nearest_verified": false,
+        "equivalent_capabilities_verified": false,
+        "capacity": null,
+        "limitations": "Candidates have not been ranked by road routes. Search additional hospitals, including across county and state boundaries."
+      },
+      "travel": {
+        "community_origin": null,
+        "road_miles_to_candidate": null,
+        "additional_miles": null,
+        "drive_minutes": null,
+        "calculated_at": null,
+        "status": "not calculated"
+      }
+    },
+    {
+      "hospital_id": "KY-LIC-600058",
+      "hospital": {
+        "name": "Morgan County ARH Hospital",
+        "address": "476 Liberty Road, West Liberty, KY 41472",
+        "address_source_url": "https://providers.arh.org/location/morgan-county-arh-hospital/loc0000132833",
+        "service": "Emergency care",
+        "service_evidence": "Emergency department and Level IV Trauma Center listed",
+        "source_url": "https://providers.arh.org/location/morgan-county-arh-hospital/loc0000132833",
+        "accessed_at": "2026-09-14",
+        "reporting_period": "Current website observation on access date; historical availability not established",
+        "publication_date": null,
+        "scope": "individual hospital",
+        "value_type": "verified website observation",
+        "limitations": "Official website evidence, not an independent operational inspection. Emergency-service presence does not establish equal specialist capability or available capacity."
+      },
+      "candidate": {
+        "name": "UK St. Claire Regional Medical Center",
+        "address": "222 Medical Circle, Morehead, KY 40351",
+        "address_source_url": "https://www.st-claire.org/locations/st-claire-regional-medical-center/",
+        "source_url": "https://www.st-claire.org/locations/st-claire-regional-medical-center/",
+        "service": "Emergency care",
+        "service_evidence": "Emergency care/department listed on official source",
+        "accessed_at": "2026-09-14",
+        "reporting_period": "Current website observation on access date; historical availability not established",
+        "publication_date": null,
+        "scope": "individual hospital",
+        "value_type": "verified website observation",
+        "limitations": "Official website evidence, not an independent operational inspection. Emergency-service presence does not establish equal specialist capability or available capacity."
+      },
+      "candidate_selection": {
+        "status": "research candidate only",
+        "nearest_verified": false,
+        "equivalent_capabilities_verified": false,
+        "capacity": null,
+        "limitations": "Candidates have not been ranked by road routes. Search additional hospitals, including across county and state boundaries."
+      },
+      "travel": {
+        "community_origin": null,
+        "road_miles_to_candidate": null,
+        "additional_miles": null,
+        "drive_minutes": null,
+        "calculated_at": null,
+        "status": "not calculated"
+      }
+    }
+  ],
+  "method_sources": [
+    {
+      "purpose": "Approximate address coordinates; not a routing service",
+      "url": "https://www.census.gov/programs-surveys/geography/technical-documentation/complete-technical-documentation/census-geocoder.html",
+      "accessed_at": "2026-09-14"
+    },
+    {
+      "purpose": "Modeled route distance in meters and duration in seconds. Fastest-route distance is not necessarily shortest road distance. No routes have been computed.",
+      "url": "https://project-osrm.org/docs/v26.4.0/http",
+      "accessed_at": "2026-09-14"
+    }
+  ],
+  "proposed_origin": {
+    "community": "West Liberty",
+    "address": "565 Main Street, West Liberty, KY",
+    "source_url": "https://kydlgweb.ky.gov/Cities/16_CityView.cfm?City_ID=435",
+    "accessed_at": "2026-09-14",
+    "publication_date": null,
+    "scope": "city government address",
+    "status": "proposed demonstration origin; coordinates not yet verified",
+    "limitations": "Not the county population center or a representative origin for every resident."
+  }
+}

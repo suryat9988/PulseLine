@@ -1,0 +1,23 @@
+# Emergency-care evidence and candidate alternatives
+
+Source observations accessed September 14, 2026. Publication dates are unknown unless separately established. This is current hospital-level website evidence, not historical event evidence.
+
+| Selected hospital | Official emergency-service evidence | Candidate alternative |
+| --- | --- | --- |
+| Paintsville ARH Hospital — 625 James Trimble Boulevard, Paintsville, KY 41240 | [Emergency department listed](https://providers.arh.org/location/paintsville-arh-hospital/loc0000131084); [address](https://providers.arh.org/location/paintsville-arh-hospital/loc0000131084) | [Highlands ARH Regional Medical Center](https://providers.arh.org/location/highlands-arh-regional-medical-center/loc0000132808) — 5000 KY Route 321, Prestonsburg, KY 41653; [address source](https://providers.arh.org/location/highlands-arh-regional-medical-center/loc0000132808) |
+| Highlands ARH Regional Medical Center — 5000 KY Route 321, Prestonsburg, KY 41653 | [Emergency department and Level IV Trauma Center listed](https://providers.arh.org/location/highlands-arh-regional-medical-center/loc0000132808); [address](https://providers.arh.org/location/highlands-arh-regional-medical-center/loc0000132808) | [Paintsville ARH Hospital](https://providers.arh.org/location/paintsville-arh-hospital/loc0000131084) — 625 James Trimble Boulevard, Paintsville, KY 41240; [address source](https://providers.arh.org/location/paintsville-arh-hospital/loc0000131084) |
+| Kentucky River Medical Center — 540 Jett Drive, Jackson, KY 41339 | [24/7 emergency care stated](https://kentuckyrivermc.com/er/); [address](https://kentuckyrivermc.com/contact-us/) | [Hazard ARH Regional Medical Center](https://providers.arh.org/location/hazard-arh-regional-medical-center/loc0000132791) — 100 Medical Center Drive, Hazard, KY 41701; [address source](https://providers.arh.org/location/hazard-arh-regional-medical-center/loc0000132791) |
+| Breckinridge Memorial Hospital — 1011 Old Highway 60, Hardinsburg, KY 40143 | [24/7 emergency department stated](https://www.mybreckhealth.org/bmh); [address](https://www.mybreckhealth.org/walk-in) | [Owensboro Health Twin Lakes Medical Center](https://webside.owensborohealth.org/services/emergency-department) — 910 Wallace Avenue, Leitchfield, KY 42754; [address source](https://www.owensborohealth.org/sites/default/files/documents/owensboro-health-directory.pdf) |
+| Morgan County ARH Hospital — 476 Liberty Road, West Liberty, KY 41472 | [Emergency department and Level IV Trauma Center listed](https://providers.arh.org/location/morgan-county-arh-hospital/loc0000132833); [address](https://providers.arh.org/location/morgan-county-arh-hospital/loc0000132833) | [UK St. Claire Regional Medical Center](https://www.st-claire.org/locations/st-claire-regional-medical-center/) — 222 Medical Circle, Morehead, KY 40351; [address source](https://www.st-claire.org/locations/st-claire-regional-medical-center/) |
+
+## Interpretation and next collection step
+
+Each alternative is an unranked research candidate, not a verified nearest hospital. Emergency care is documented, but full trauma/specialist equivalence and spare capacity are not established. Do not automatically apply this evidence to maternity, surgery or inpatient-care scenarios.
+
+Road miles, additional miles and drive time remain null, not zero. Choose a sourced community origin, verify coordinates, compare routes to a sufficiently complete candidate set, and preserve network vintage and calculation date. Additional miles equals candidate-route miles minus selected-hospital-route miles from the same origin. The best-access before/after comparison must be calculated separately.
+
+A West Liberty demonstration could use the [city-government address at 565 Main Street](https://kydlgweb.ky.gov/Cities/16_CityView.cfm?City_ID=435), explicitly labeled as a proposed public landmark origin. It is not the Morgan County population center. Origins for other communities still require collection.
+
+[Census geocoding documentation](https://www.census.gov/programs-surveys/geography/technical-documentation/complete-technical-documentation/census-geocoder.html) explains approximate address coordinates. [OSRM documentation](https://project-osrm.org/docs/v26.4.0/http) documents modeled road distance and travel duration; fastest-route mileage is not necessarily shortest mileage. No routing results are claimed here.
+
+The companion [JSON evidence file](PulseLine_emergency_care_candidates.json) preserves source URLs, scope, access dates, unknown publication dates and explicit uncalculated fields. These research files do not themselves update the application table.

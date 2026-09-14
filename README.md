@@ -227,3 +227,7 @@ The dashboard uses the validated CMS snapshot for five reviewed hospitals. See [
 ## Community impact proposal
 
 See the [community-impact map and comparable-care travel requirements](research/PulseLine_community_impact_proposal.md) for the approved closure-scenario research handoff, including per-community road miles, additional travel and verification requirements. The hospital cards now open an interactive county exploration panel with service selection and a travel-assessment table. Verified community origins, comparable-service matches, route estimates and affected-population calculations are still pending.
+
+## Emergency-care source evidence
+
+[Verified service sources and candidate alternatives for five hospitals](research/PulseLine_emergency_care_candidates.md) are available with a [structured evidence file](research/PulseLine_emergency_care_candidates.json). Alternatives are not yet ranked and travel distances remain uncalculated.
