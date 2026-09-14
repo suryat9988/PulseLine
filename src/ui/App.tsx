@@ -1,6 +1,6 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import evidencePack from "../../research/PulseLine_expanded_evidence_v1.json";
-import researchPack from "../../research/PulseLine_three_hospital_data.json";
+import { dashboardResearchPack, cmsRefresh } from "../../lib/dashboard-research.ts";
 import { adaptEvidencePack, eventsForHospital, observationsForHospital } from "../../lib/adapt-evidence.ts";
 import { researchAskContext, scoredAskContext, type PulseAnswer } from "../../lib/ask/index.ts";
 import { buildExplorerCatalog } from "../../lib/explorer/index.ts";
@@ -11,7 +11,12 @@ import { HospitalWorkspace } from "./HospitalWorkspace.tsx";
 import { SiteHeader } from "./SiteHeader.tsx";
 
 export function App() {
-  const loaded = useMemo(() => loadResearchDashboard(researchPack), []);
+  const [checkedNow, setCheckedNow] = useState(() => Date.now());
+  useEffect(() => {
+    const timer = window.setInterval(() => setCheckedNow(Date.now()), 60_000);
+    return () => window.clearInterval(timer);
+  }, []);
+  const loaded = useMemo(() => loadResearchDashboard(dashboardResearchPack), []);
   const evidence = useMemo(() => adaptEvidencePack(evidencePack), []);
   const [page, setPage] = useState<"explore" | "about">(() =>
     window.location.hash.startsWith("#about") ? "about" : "explore",
@@ -23,8 +28,8 @@ export function App() {
   const [selectedByHospital, setSelectedByHospital] = useState<Record<string, string[]>>({});
 
   const researchCases = useMemo(
-    () => evidence.ledger?.hospitals.filter((hospital) => hospital.financialCoverage === "pending") ?? [],
-    [evidence.ledger],
+    () => evidence.ledger?.hospitals.filter((hospital) => hospital.financialCoverage === "pending" && !loaded.facilities.some((facility) => facility.hospitalId === hospital.hospitalId)) ?? [],
+    [evidence.ledger, loaded.facilities],
   );
   const catalog = useMemo(
     () => buildExplorerCatalog(loaded.ok ? loaded.facilities : [], researchCases, evidence.ledger?.events ?? []),
@@ -98,6 +103,14 @@ export function App() {
           window.location.hash = "about";
         }}
       />
+
+      <p className="cms-freshness" style={{ margin: "12px 24px", fontSize: "0.875rem" }}>
+        CMS financial data checked {cmsRefresh.last_successful_check_at.slice(0, 10)} (UTC).
+        {" "}Latest source cohort: {cmsRefresh.latest_source_cohort}; fiscal periods vary by hospital.
+        {checkedNow - Date.parse(cmsRefresh.last_successful_check_at) > 48 * 60 * 60 * 1000
+          ? " The scheduled check is overdue; showing the last validated snapshot."
+          : " Checks do not mean CMS has published newer financial periods."}
+      </p>
 
       {page === "about" ? (
         <AboutPulseLine hospitalView={selected} />

@@ -326,8 +326,8 @@ export function adaptResearchPack(input: unknown): ResearchAdaptResult {
     errors,
     extract: {
       disclaimer:
-        "Research-backed CMS Hospital Provider Cost Report rows for three Kentucky CAHs, 12 fiscal reports. Original CMS strings preserved. Outcomes unknown. Operating margin not calculated.",
-      source: "research/PulseLine_three_hospital_data.json accessed 2026-09-11",
+        `CMS Hospital Provider Cost Report rows for ${hospitals.size} Kentucky hospitals, ${reports.length} fiscal reports. Original CMS strings preserved. Event evidence is separate. Operating margin not calculated.`,
+      source: "CMS research extracts; per-report URLs and access dates preserved in provenance",
       retrievedAt: "2026-09-11",
       sourceVerification: "pending",
       missingEvidence: [

@@ -103,3 +103,47 @@ describe("research adapter", () => {
     assert.ok(adapted.errors.some((error) => error.message.includes("Malformed CMS numeric string")));
   });
 });
+
+
+describe("historical case dashboard integration", () => {
+  it("loads both cases with all source-backed periods and no duplicate pending cards", async () => {
+    const { dashboardResearchPack } = await import("../lib/dashboard-research.ts");
+    const { adaptEvidencePack } = await import("../lib/adapt-evidence.ts");
+    const { buildExplorerCatalog } = await import("../lib/explorer/catalog.ts");
+    const loaded = loadResearchDashboard(dashboardResearchPack);
+    assert.equal(loaded.ok, true, JSON.stringify(loaded.errors));
+    assert.equal(loaded.facilities.length, 5);
+    assert.ok(loaded.views.length >= 29);
+    const highlands = loaded.facilities.find((f) => f.hospitalId === "case_highlands")!;
+    const hall = loaded.facilities.find((f) => f.hospitalId === "case_paul_b_hall")!;
+    assert.ok(highlands.reports.length >= 8);
+    assert.ok(hall.reports.length >= 9);
+    assert.equal(highlands.latest.hospital.ccn, "180005");
+    assert.equal(hall.latest.hospital.ccn, "180078");
+    for (const facility of [highlands, hall]) {
+      for (const view of facility.reports) {
+        assert.equal(view.hospital.financials.netPatientRevenue,
+          Number(view.hospital.sourceFields["Net Patient Revenue"]));
+      }
+    }
+    const short = hall.reports.find((v) => v.hospital.fiscalYearStart === "2021-10-01")!;
+    assert.equal(short.hospital.fiscalYearEnd, "2021-11-30");
+    assert.equal(short.hospital.periodDays, 61);
+
+    for (const f of [hall, highlands]) for (const v of f.reports) {
+      assert.equal(v.hospital.publicationDate, null);
+      assert.equal(v.hospital.financials.operatingMargin, null);
+      assert.ok(v.hospital.sourceUrl?.startsWith("https://data.cms.gov/"));
+      assert.match(v.hospital.provenance.retrievedAt!, /^\d{4}-\d{2}-\d{2}$/);
+    }
+    const raw = JSON.parse(readFileSync(join(dirname(researchPath), "PulseLine_expanded_evidence_v1.json"), "utf8"));
+    const evidence = adaptEvidencePack(raw);
+    assert.equal(evidence.ok, true);
+    const catalog = buildExplorerCatalog(loaded.facilities, evidence.ledger!.hospitals, evidence.ledger!.events);
+    assert.equal(catalog.length, 5);
+    for (const id of ["case_highlands", "case_paul_b_hall"]) {
+      assert.equal(catalog.filter((h) => h.hospitalId === id).length, 1);
+      assert.equal(catalog.find((h) => h.hospitalId === id)!.kind, "scored");
+    }
+  });
+});

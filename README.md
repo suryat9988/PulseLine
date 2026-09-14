@@ -185,3 +185,7 @@ npm run lint
 npm run build
 npm run dev
 ```
+
+## CMS financial updates
+
+The dashboard uses the validated CMS snapshot for five reviewed hospitals. See [automatic refresh setup and evidence limitations](research/PulseLine_CMS_refresh.md) for daily updates, activation, and failure handling.
