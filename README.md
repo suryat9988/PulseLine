@@ -223,3 +223,7 @@ npm run dev
 ## CMS financial updates
 
 The dashboard uses the validated CMS snapshot for five reviewed hospitals. See [automatic refresh setup and evidence limitations](research/PulseLine_CMS_refresh.md) for daily updates, activation, and failure handling.
+
+## Community impact proposal
+
+See the [community-impact map and comparable-care travel requirements](research/PulseLine_community_impact_proposal.md) for the approved closure-scenario research handoff, including per-community road miles, additional travel and verification requirements. This is a specification; the map and route estimates are not implemented yet.
