@@ -1,3 +1,4 @@
+import { signedComparisonLayout } from "../../../lib/scenario/bars.ts";
 import { MAX_CHANGE_PCT, MIN_CHANGE_PCT, SCENARIO_LIMIT, type ScenarioInputs, type ScenarioResult } from "../../../lib/scenario/whatif.ts";
 import { money } from "../format.ts";
 
@@ -104,11 +105,9 @@ export function WhatIfPanel({
       <figure className="chart-block is-compact">
         <figcaption>
           <strong>Baseline versus scenario</strong>
+          <p className="tiny">Signed comparison centered on zero. Equal losses and surpluses are not the same length. Illustrative scenario—not a forecast.</p>
         </figcaption>
-        <div className="whatif-bars" aria-hidden="true">
-          <span style={{ width: barWidth(scenario.baselineBalance, scenario.scenarioBalance) }} className="base" />
-          <span style={{ width: barWidth(scenario.scenarioBalance, scenario.baselineBalance) }} className="next" />
-        </div>
+        <SignedBalanceChart baseline={scenario.baselineBalance} scenario={scenario.scenarioBalance} />
         <table className="chart-table">
           <thead>
             <tr>
@@ -149,9 +148,45 @@ export function WhatIfPanel({
   );
 }
 
-function barWidth(value: number | null, other: number | null): string {
-  const left = Math.abs(value ?? 0);
-  const right = Math.abs(other ?? 0);
-  const max = Math.max(left, right, 1);
-  return `${Math.round((left / max) * 100)}%`;
+function SignedBalanceChart({
+  baseline,
+  scenario,
+}: {
+  baseline: number | null;
+  scenario: number | null;
+}) {
+  const layout = signedComparisonLayout(
+    [
+      { id: "baseline", label: "Baseline balance", value: baseline },
+      { id: "scenario", label: "Scenario balance", value: scenario },
+    ],
+    (value) => money(value),
+  );
+  return (
+    <div className="signed-bars" role="img" aria-label="Baseline and scenario patient-service balances on a signed scale centered at zero">
+      <div className="signed-bars-axis" aria-hidden="true">
+        <span>Negative</span>
+        <span>Zero</span>
+        <span>Positive</span>
+      </div>
+      {layout.rows.map((row) => (
+        <div key={row.id} className={`signed-bar-row is-${row.sign}`}>
+          <p className="signed-bar-label">
+            <strong>{row.label}</strong>
+            <span>{row.signedLabel}</span>
+          </p>
+          <div className="signed-bar-track">
+            <span className="signed-bar-zero" style={{ left: `${layout.zeroPct}%` }} />
+            {row.available && row.widthPct > 0 ? (
+              <span
+                className={`signed-bar-fill is-${row.sign}`}
+                style={{ left: `${row.leftPct}%`, width: `${row.widthPct}%` }}
+              />
+            ) : null}
+            {row.available && row.sign === "zero" ? <span className="signed-bar-zero-mark" style={{ left: `${layout.zeroPct}%` }} /> : null}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
 }

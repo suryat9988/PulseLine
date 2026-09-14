@@ -47,16 +47,18 @@ export function FinancialStatements({ reports }: { reports: HospitalView[] }) {
                 .map((row) => (
                   <tr key={row.id}>
                     <th scope="row">
-                      {row.label}
-                      <span className="tiny">
-                        {row.origin === "calculated" ? "Calculated" : "Source-reported"}
-                        {row.cmsField ? ` · ${row.cmsField}` : ""}
-                      </span>
-                      <details>
-                        <summary>Definition</summary>
-                        <p className="tiny">{row.definition}</p>
-                        <p className="tiny">{row.not}</p>
-                      </details>
+                      <div className="statement-measure">
+                        <span className="statement-measure-name">{row.label}</span>
+                        <span className="tiny statement-measure-origin">
+                          {row.origin === "calculated" ? "Calculated in PulseLine" : "Source-reported"}
+                          {row.cmsField ? ` · CMS field: ${row.cmsField}` : ""}
+                        </span>
+                        <details className="statement-definition">
+                          <summary>What this is</summary>
+                          <p>{row.definition}</p>
+                          <p className="tiny">{row.not}</p>
+                        </details>
+                      </div>
                     </th>
                     {row.cells.map((cell) => (
                       <td key={cell.reportId} title={cell.exclusion ?? undefined}>

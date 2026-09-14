@@ -181,6 +181,89 @@ export function diligenceGaps(input: {
   return gaps;
 }
 
+const BRIEF_PRIORITY_IDS = new Set([
+  "entity_scope",
+  "ccn_transition",
+  "address_mismatch",
+  "financials_pending",
+  "event_ccn",
+  "newer_financials",
+]);
+
+export function briefEvidenceGaps(input: {
+  view: HospitalView | null;
+  research: EvidenceHospital | null;
+  events: StructuralEvent[];
+  observations: EvidenceObservation[];
+  pending: boolean;
+  comparable?: boolean;
+  durationOk?: boolean;
+  durationStatus?: "pass" | "unknown" | "fail";
+  overlapOrDuplicate?: boolean;
+  publicationUnverified?: boolean;
+  displayedMissing?: string[];
+}): { priority: DiligenceGap[]; additional: DiligenceGap[] } {
+  const gaps = diligenceGaps(input);
+  if (!input.pending) {
+    if (input.durationStatus === "unknown") {
+      pushUnique(gaps, {
+        id: "missing_period_length",
+        kind: "missing_from_pulseline",
+        label: "Reporting-period length is missing",
+        detail: "At least one report has no verified period length. PulseLine does not describe those lengths as being within 30 days.",
+      });
+    } else if (input.durationStatus === "fail") {
+      pushUnique(gaps, {
+        id: "unequal_periods",
+        kind: "excluded_uninterpretable",
+        label: "Reporting periods are not the same length",
+        detail: "Period lengths differ by more than 30 days. Both reports are shown. PulseLine does not treat them as a continuous trend.",
+      });
+    }
+  }
+  if (input.overlapOrDuplicate) {
+    pushUnique(gaps, {
+      id: "overlap_or_duplicate",
+      kind: "conflicting_evidence",
+      label: "Overlapping or revised reports",
+      detail: "These fiscal periods overlap or share a CMS report record id. PulseLine does not present an unqualified growth rate.",
+    });
+  }
+  if (input.publicationUnverified && input.view) {
+    pushUnique(gaps, {
+      id: "unverified_publication",
+      kind: "unavailable_in_source",
+      label: "Source publication date is unverified",
+      detail: "Unknown publication dates limit point-in-time historical claims. They do not prevent clearly labeled retrospective viewing of these reports. Fiscal-end age is not a publication or access date.",
+    });
+  }
+  for (const label of input.displayedMissing ?? []) {
+    pushUnique(gaps, {
+      id: `displayed_missing:${label}`,
+      kind: "missing_from_pulseline",
+      label: `${label} is missing or invalid on a compared report`,
+      detail: "A displayed finding uses a measure that is missing or excluded. Missing is not zero.",
+    });
+  }
+
+  const priority: DiligenceGap[] = [];
+  const additional: DiligenceGap[] = [];
+  for (const gap of gaps) {
+    const findingRelated =
+      BRIEF_PRIORITY_IDS.has(gap.id) ||
+      gap.id.startsWith("unsupported:") ||
+      gap.id.startsWith("invalid:") ||
+      gap.id.startsWith("unavailable:") ||
+      gap.id.startsWith("displayed_missing:") ||
+      gap.id === "unequal_periods" ||
+      gap.id === "overlap_or_duplicate" ||
+      gap.id === "unverified_publication";
+    if (findingRelated) priority.push(gap);
+    else additional.push(gap);
+  }
+  return { priority, additional };
+}
+
 export function screeningEvidenceGap(input: {
   pending: boolean;
   addressMismatch: boolean;

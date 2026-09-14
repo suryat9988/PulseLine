@@ -38,7 +38,13 @@ export async function downloadAnswersPdf(doc: ExportDocument, filename: string):
     write(`Hospital: ${answer.hospitalName}`, 10);
     write("Answer", 11, true);
     write(answer.statement, 11);
-    if (answer.periodLabel) write(`Period: ${answer.periodLabel}`, 10);
+    if (answer.periodRows.length > 0) {
+      for (const row of answer.periodRows) write(`${row.label}: ${row.value}`, 10);
+    } else if (answer.periodLabel) {
+      write(`Period: ${answer.periodLabel}`, 10);
+    }
+    write(answer.modeLabel, 9);
+    if (answer.explanation) write(answer.explanation, 9);
     write(`Kind: ${answer.kind.replaceAll("_", " ")}`, 10);
     if (answer.scenario) {
       write("Scenario assumptions", 11, true);

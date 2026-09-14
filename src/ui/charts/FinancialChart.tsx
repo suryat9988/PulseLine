@@ -29,7 +29,6 @@ export function FinancialChart({
   signed = false,
   display = "chart",
   onToggleDisplay,
-  expandable = true,
 }: {
   series: ChartSeries;
   extra?: ChartSeries | null;
@@ -37,18 +36,16 @@ export function FinancialChart({
   signed?: boolean;
   display?: "chart" | "table";
   onToggleDisplay?: (next: "chart" | "table") => void;
-  expandable?: boolean;
 }) {
   const titleId = useId();
   const [active, setActive] = useState<string | null>(null);
-  const [expanded, setExpanded] = useState(false);
   const values = numericValues(series, extra);
   const hasNegative = values.some((value) => value < 0);
   const useSigned = signed || hasNegative;
   const max = values.length ? Math.max(...values.map(Math.abs), values.includes(0) ? 0 : 1) : 1;
   const domainMax = max;
   const domainMin = useSigned ? -max : 0;
-  const height = compact ? 220 : expanded ? 520 : 460;
+  const height = compact ? 220 : 460;
   const width = 960;
   const padLeft = 88;
   const padRight = 24;
@@ -75,12 +72,13 @@ export function FinancialChart({
     setActive(point.reportId);
   }
 
-  const figure = (
-    <figure className={`chart-block ${compact ? "is-compact" : "is-large"} ${expanded ? "is-expanded" : ""}`}>
+  return (
+    <figure className={`chart-block ${compact ? "is-compact" : "is-large"}`}>
       <figcaption className="chart-caption">
         <div>
           <strong>{extra ? `${series.title} and ${extra.title}` : series.title}</strong>
           <p className="tiny">{series.question}</p>
+          <p className="tiny">{series.comparabilityNote}</p>
           <p className="chart-unit">{series.unit === "usd" ? "USD" : series.unit === "percent" ? "Percent" : series.unit === "ratio" ? "Ratio" : series.unit}</p>
         </div>
         <div className="chart-toolbar">
@@ -93,11 +91,6 @@ export function FinancialChart({
                 Data table
               </button>
             </div>
-          ) : null}
-          {expandable && display === "chart" ? (
-            <button type="button" className="chip" onClick={() => setExpanded((open) => !open)}>
-              {expanded ? "Close expanded chart" : "Expand chart"}
-            </button>
           ) : null}
         </div>
       </figcaption>
@@ -195,17 +188,6 @@ export function FinancialChart({
         <p className="tiny">Value axis includes zero. Incomparable CMS file-cohort years are not treated as consecutive fiscal periods.</p>
       </details>
     </figure>
-  );
-
-  if (!expanded) return figure;
-
-  return (
-    <div className="chart-expand-layer">
-      <button type="button" className="drawer-backdrop" aria-label="Close expanded chart" onClick={() => setExpanded(false)} />
-      <div className="chart-expand-dialog" role="dialog" aria-modal="true" aria-labelledby={titleId}>
-        {figure}
-      </div>
-    </div>
   );
 }
 

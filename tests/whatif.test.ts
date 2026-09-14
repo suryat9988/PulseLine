@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import { adaptEvidencePack } from "../lib/adapt-evidence.ts";
 import { answerKnownIntent, buildExportDocument, formatAnswerText, researchAskContext, scoredAskContext } from "../lib/ask/index.ts";
 import { loadResearchDashboard } from "../lib/pipeline.ts";
+import { signedComparisonLayout } from "../lib/scenario/bars.ts";
 import {
   clampChangePct,
   evaluateScenario,
@@ -119,5 +120,33 @@ describe("what-if scenario model", () => {
       "whatif_scenario",
     );
     assert.equal(researchAnswer.status, "unavailable");
+  });
+
+  it("places equal losses and surpluses on opposite sides of a zero-centered chart", () => {
+    const layout = signedComparisonLayout([
+      { id: "baseline", label: "Baseline balance", value: -10 },
+      { id: "scenario", label: "Scenario balance", value: 10 },
+    ]);
+    assert.equal(layout.zeroPct, 50);
+    assert.equal(layout.rows[0]?.sign, "negative");
+    assert.equal(layout.rows[1]?.sign, "positive");
+    assert.equal(layout.rows[0]?.widthPct, layout.rows[1]?.widthPct);
+    assert.ok((layout.rows[0]?.leftPct ?? 0) < layout.zeroPct);
+    assert.equal(layout.rows[1]?.leftPct, layout.zeroPct);
+    const zeros = signedComparisonLayout([
+      { id: "baseline", label: "Baseline balance", value: 0 },
+      { id: "scenario", label: "Scenario balance", value: 0 },
+    ]);
+    assert.equal(zeros.rows[0]?.sign, "zero");
+    assert.equal(zeros.rows[0]?.widthPct, 0);
+    const missing = signedComparisonLayout([
+      { id: "baseline", label: "Baseline balance", value: null },
+      { id: "scenario", label: "Scenario balance", value: 25 },
+    ]);
+    assert.equal(missing.rows[0]?.sign, "missing");
+    assert.equal(missing.rows[0]?.available, false);
+    assert.equal(missing.rows[0]?.value, null);
+    assert.notEqual(missing.rows[0]?.value, 0);
+    assert.equal(missing.rows[1]?.sign, "positive");
   });
 });

@@ -54,6 +54,15 @@ export function suggestedQuestions(context: AskContext): SuggestedQuestion[] {
     }
   }
 
+  if (!scored) {
+    items.unshift({
+      id: "npr_change_pending",
+      intent: "revenue_change",
+      label: "What changed",
+      question: "What changed between these reports?",
+    });
+  }
+
   items.push({
     id: "missing",
     intent: "missing_excluded",

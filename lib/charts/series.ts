@@ -1,11 +1,13 @@
 import type { HospitalView } from "../../src/types.ts";
 import {
+  comparabilityCaption,
   currentRatioValue,
   inpatientUtilizationValue,
   liabilitiesToAssetsValue,
   periodSetComparability,
   publishedPatientServiceResult,
   safePercentChange as financeSafePercentChange,
+  type ComparabilityState,
 } from "../finance/index.ts";
 
 export type ChartUnit = "usd" | "ratio" | "days" | "score" | "percent";
@@ -29,6 +31,7 @@ export interface ChartSeries {
   definition: string;
   points: ChartPoint[];
   comparable: boolean;
+  comparabilityState: ComparabilityState;
   comparabilityNote: string;
 }
 
@@ -36,9 +39,13 @@ function orderedReports(reports: HospitalView[]): HospitalView[] {
   return [...reports].sort((left, right) => left.hospital.fiscalYearEnd.localeCompare(right.hospital.fiscalYearEnd));
 }
 
-export function reportsComparable(reports: HospitalView[]): { comparable: boolean; note: string } {
+export function reportsComparable(reports: HospitalView[]): {
+  comparable: boolean;
+  state: ComparabilityState;
+  note: string;
+} {
   const result = periodSetComparability(reports);
-  return { comparable: result.comparable, note: result.note };
+  return { comparable: result.comparable, state: result.state, note: comparabilityCaption(result) };
 }
 
 function point(
@@ -77,6 +84,7 @@ export function moneySeries(
     unit: "usd",
     definition,
     comparable: comparability.comparable,
+    comparabilityState: comparability.state,
     comparabilityNote: comparability.note,
     points: ordered.map((report) => {
       const value = read(report);
@@ -98,6 +106,7 @@ export function patientServiceResultSeries(reports: HospitalView[]): ChartSeries
     definition:
       "Net Income from Service to Patients / Net Patient Revenue. Historical patient-care result, not overall operating margin.",
     comparable: comparability.comparable,
+    comparabilityState: comparability.state,
     comparabilityNote: comparability.note,
     points: ordered.map((report) => {
       const income = publishedPatientServiceResult(report.hospital);
@@ -123,6 +132,7 @@ export function liabilitiesAssetsSeries(reports: HospitalView[]): ChartSeries {
     unit: "ratio",
     definition: "Total Liabilities / Total Assets. Excluded when assets are ≤ 0 or liabilities are uninterpretable.",
     comparable: comparability.comparable,
+    comparabilityState: comparability.state,
     comparabilityNote: comparability.note,
     points: ordered.map((report) => {
       const ratio = liabilitiesToAssetsValue(report.hospital);
@@ -141,6 +151,7 @@ export function currentRatioSeries(reports: HospitalView[]): ChartSeries {
     unit: "ratio",
     definition: "Total Current Assets / Total Current Liabilities. Excluded when current liabilities are ≤ 0.",
     comparable: comparability.comparable,
+    comparabilityState: comparability.state,
     comparabilityNote: comparability.note,
     points: ordered.map((report) => {
       const ratio = currentRatioValue(report.hospital);
@@ -160,6 +171,7 @@ export function utilizationSeries(reports: HospitalView[]): ChartSeries {
     definition:
       "Total Days / Total Bed Days Available from the CMS fiscal report. Not Kentucky calendar-year utilization and not a financial measure.",
     comparable: comparability.comparable,
+    comparabilityState: comparability.state,
     comparabilityNote: comparability.note,
     points: ordered.map((report) => {
       const utilization = inpatientUtilizationValue(report.hospital);
@@ -178,6 +190,7 @@ export function scoreHistorySeries(reports: HospitalView[]): ChartSeries {
     unit: "score",
     definition: "PulseLine experimental score for each fiscal report. Coverage is shown separately and is not a score.",
     comparable: comparability.comparable,
+    comparabilityState: comparability.state,
     comparabilityNote: comparability.note,
     points: ordered.map((report) => point(report, report.financial.score, report.financial.score === null, report.financial.score === null ? "No score. Coverage only." : null)),
   };

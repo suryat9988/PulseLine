@@ -33,6 +33,7 @@ export function HospitalExplorer({
   const [mapFocus, setMapFocus] = useState<"kentucky" | "area" | "hospital">("kentucky");
   const [visibleIndex, setVisibleIndex] = useState(0);
   const [listOpen, setListOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
 
   const result = useMemo(() => {
     const filtered = filterExplorerHospitals(hospitals, filtersForArea(area), KY_COUNTY_NAMES);
@@ -71,18 +72,43 @@ export function HospitalExplorer({
     <section id="hospitals" className="explorer" aria-labelledby="explorer-title">
       <div className="explorer-head">
         <h1 id="explorer-title">Hospital financial explorer</h1>
-        <AreaSearch
+        <p className="tiny">Historical public finances for one hospital at a time — not a closure forecast.</p>
+      </div>
+
+      <div className="explorer-split">
+        <div className="explorer-search-pane">
+          <AreaSearch
+            hospitals={hospitals}
+            counties={KY_COUNTIES}
+            query={query}
+            open={searchOpen}
+            onOpenChange={setSearchOpen}
+            onQueryChange={setQuery}
+            onChoose={(suggestion) => {
+              setQuery(suggestion.label);
+              chooseArea(areaFromSuggestion(suggestion));
+            }}
+            onClear={() => {
+              setQuery("");
+              chooseArea(allKentuckyArea(), "kentucky");
+            }}
+          />
+        </div>
+        <KentuckyMap
           hospitals={hospitals}
-          counties={KY_COUNTIES}
-          query={query}
-          onQueryChange={setQuery}
-          onChoose={(suggestion) => {
-            setQuery(suggestion.label);
-            chooseArea(areaFromSuggestion(suggestion));
+          area={area}
+          mapFocus={mapFocus}
+          selectedHospitalId={selectedId}
+          onSelectCounty={(fips, name) => {
+            setQuery(`${name} County`);
+            chooseArea(areaFromCounty(fips, name));
+            setSearchOpen(true);
           }}
-          onClear={() => {
+          onSelectHospital={viewHospital}
+          onShowAll={() => {
             setQuery("");
             chooseArea(allKentuckyArea(), "kentucky");
+            setSearchOpen(false);
           }}
         />
       </div>
@@ -94,23 +120,6 @@ export function HospitalExplorer({
       <p className="tiny">
         {DATASET_SCOPE_NOTE} {FILTER_LOCATION_HELP}
       </p>
-
-      <KentuckyMap
-        hospitals={hospitals}
-        area={area}
-        mapFocus={mapFocus}
-        selectedHospitalId={selectedId}
-        onSelectCounty={(fips, name) => {
-          setQuery(`${name} County`);
-          chooseArea(areaFromCounty(fips, name));
-        }}
-        onSelectHospital={viewHospital}
-        onShowAll={() => {
-          setQuery("");
-          chooseArea(allKentuckyArea(), "kentucky");
-        }}
-        onBackToArea={() => setMapFocus(area.kind === "all" ? "kentucky" : "area")}
-      />
 
       {result.matchCount === 0 ? (
         <div className="empty-copy">

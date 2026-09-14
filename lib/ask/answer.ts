@@ -1,8 +1,9 @@
-import { MEASURES } from "../finance/index.ts";
+import { formatWhatChangedAnswer, MEASURES, whatChangedBrief } from "../finance/index.ts";
 import { flaggedExplanations } from "../score-financial.ts";
 import { SCENARIO_LIMIT } from "../scenario/whatif.ts";
 import { fiscalLabel, moneyExact, moneyHeadline } from "../../src/ui/format.ts";
 import { interpretQuestion, totalClarificationOptions, yearClarification } from "./interpret.ts";
+import { parseApprovedExplanationChoice, RESTATE_EXPLANATION } from "./presentation.ts";
 import {
   EXPERIMENTAL_NOTE,
   UNAVAILABLE_STATEMENT,
@@ -118,23 +119,6 @@ function resolveReport(context: AskContext, interpreted: InterpretedQuestion) {
   return context.selectedReport;
 }
 
-function previousReport(context: AskContext, selected: NonNullable<AskContext["selectedReport"]>) {
-  const ordered = [...context.reports].sort((left, right) =>
-    left.hospital.fiscalYearEnd.localeCompare(right.hospital.fiscalYearEnd),
-  );
-  const index = ordered.findIndex((report) => report.hospital.id === selected.hospital.id);
-  if (index <= 0) return null;
-  return ordered[index - 1] ?? null;
-}
-
-function periodsOverlap(
-  left: NonNullable<AskContext["selectedReport"]>,
-  right: NonNullable<AskContext["selectedReport"]>,
-): boolean {
-  const leftStart = left.hospital.fiscalYearStart ?? left.hospital.fiscalYearEnd;
-  const rightStart = right.hospital.fiscalYearStart ?? right.hospital.fiscalYearEnd;
-  return leftStart < right.hospital.fiscalYearEnd && rightStart < left.hospital.fiscalYearEnd;
-}
 
 function answerWhyScore(context: AskContext, question: string): PulseAnswer {
   const view = context.selectedReport;
@@ -235,71 +219,48 @@ function answerMoney(
 }
 
 function answerRevenueChange(context: AskContext, question: string, interpreted: InterpretedQuestion): PulseAnswer {
-  if (context.kind !== "scored" || !context.selectedReport) {
+  const selected = context.kind === "scored" ? resolveReport(context, interpreted) : null;
+  const brief = whatChangedBrief({
+    view: selected,
+    reports: context.reports,
+    pending: context.kind !== "scored" || !context.selectedReport,
+    hospitalName: context.hospitalName,
+  });
+  const formatted = formatWhatChangedAnswer(brief);
+  if (brief.status === "pending") {
     return baseAnswer(context, question, "revenue_change", {
       status: "unavailable",
-      statement: UNAVAILABLE_STATEMENT,
-      limitations: ["Financial data pending. No year-over-year revenue comparison is possible.", METHOD_LIMIT],
+      statement: formatted.statement,
+      limitations: [...formatted.limitations, METHOD_LIMIT],
+      lockedFacts: formatted.lockedFacts,
     });
   }
-  const selected = resolveReport(context, interpreted);
-  if (!selected) {
-    return baseAnswer(context, question, "revenue_change", { status: "unavailable", statement: UNAVAILABLE_STATEMENT });
-  }
-  const previous = previousReport(context, selected);
-  if (!previous) {
-    return baseAnswer(context, question, "revenue_change", {
-      status: "unavailable",
-      statement: UNAVAILABLE_STATEMENT,
-      periodLabel: fiscalLabel(selected.hospital.fiscalYearStart, selected.hospital.fiscalYearEnd),
-      limitations: ["No earlier comparable report is available in PulseLine for this hospital.", METHOD_LIMIT],
-    });
-  }
-  if (periodsOverlap(selected, previous)) {
-    return baseAnswer(context, question, "revenue_change", {
-      status: "unavailable",
-      statement: UNAVAILABLE_STATEMENT,
-      limitations: ["These fiscal periods overlap, so PulseLine does not subtract or combine them.", METHOD_LIMIT],
-    });
-  }
-  const currentValue = selected.hospital.financials.netPatientRevenue;
-  const previousValue = previous.hospital.financials.netPatientRevenue;
-  const currentPeriod = fiscalLabel(selected.hospital.fiscalYearStart, selected.hospital.fiscalYearEnd);
-  const previousPeriod = fiscalLabel(previous.hospital.fiscalYearStart, previous.hospital.fiscalYearEnd);
-  if (currentValue === null || previousValue === null) {
-    return baseAnswer(context, question, "revenue_change", {
-      status: "unavailable",
-      statement: UNAVAILABLE_STATEMENT,
-      periods: [periodFromView(previous), periodFromView(selected)],
-      sources: [cmsSource(previous), cmsSource(selected)],
-      limitations: ["A year-over-year change needs Net Patient Revenue on both reports. Missing is not zero.", METHOD_LIMIT],
-    });
-  }
-  const delta = currentValue - previousValue;
-  const percent =
-    previousValue === 0
-      ? "Percent change is not interpretable because the earlier Net Patient Revenue is zero."
-      : `That is a ${moneyExact(delta)} difference (${((delta / previousValue) * 100).toFixed(1)}%) between two reports, not a multi-year trend.`;
-  const statement = `${context.hospitalName} reported Net Patient Revenue of ${moneyExact(previousValue)} for ${previousPeriod} and ${moneyExact(currentValue)} for ${currentPeriod}. ${percent}`;
+  const previousView =
+    selected && brief.previousPeriod
+      ? context.reports.find((report) => report.hospital.fiscalYearEnd === brief.previousPeriod?.end) ?? null
+      : null;
+  const nprPrevious = previousView?.hospital.financials.netPatientRevenue ?? null;
+  const nprCurrent = selected?.hospital.financials.netPatientRevenue ?? null;
   return baseAnswer(context, question, "revenue_change", {
     status: "complete",
     kind: "calculated",
-    statement,
-    periodLabel: `${previousPeriod} → ${currentPeriod}`,
-    periods: [periodFromView(previous), periodFromView(selected)],
-    sources: [cmsSource(previous), cmsSource(selected)],
+    statement: formatted.statement,
+    periodLabel:
+      brief.previousPeriod && brief.currentPeriod
+        ? `${brief.previousPeriod.label} → ${brief.currentPeriod.label}`
+        : brief.currentPeriod?.label ?? null,
+    periods: [previousView, selected].filter((item): item is NonNullable<typeof item> => item != null).map(periodFromView),
+    sources: brief.sources,
     lockedFacts: [
-      `previous=${previousValue}`,
-      `current=${currentValue}`,
-      `delta=${delta}`,
-      moneyExact(previousValue),
-      moneyExact(currentValue),
-      moneyExact(delta),
+      ...formatted.lockedFacts,
+      nprPrevious !== null ? `previous=${nprPrevious}` : "previous=null",
+      nprCurrent !== null ? `current=${nprCurrent}` : "current=null",
+      nprPrevious !== null && nprCurrent !== null ? `delta=${nprCurrent - nprPrevious}` : "delta=null",
+      nprPrevious !== null ? moneyExact(nprPrevious) : "previous_npr=missing",
+      nprCurrent !== null ? moneyExact(nprCurrent) : "current_npr=missing",
     ],
-    limitations: [
-      "Comparison uses the same CMS measure, USD units, and this hospital only. Reports are not summed.",
-      METHOD_LIMIT,
-    ],
+    limitations: [...formatted.limitations, METHOD_LIMIT],
+    suggestedFollowUps: ["What evidence should I verify next?"],
   });
 }
 
@@ -687,18 +648,30 @@ function suggestedFallback(context: AskContext): string[] {
   return ["What financial pressures are visible in the available reports?", "Which figures are missing or excluded?"];
 }
 
-export function applyModelExplanation(answer: PulseAnswer, explanation: string | null): PulseAnswer {
-  if (answer.status !== "complete" || !explanation) {
+export function applyModelExplanation(
+  answer: PulseAnswer,
+  explanation: string | null,
+  options: { modelRan?: boolean } = {},
+): PulseAnswer {
+  if (answer.status !== "complete") {
     return { ...answer, mode: "data_lookup", explanation: null };
   }
-  const extraMoney = [...explanation.matchAll(/-?\$[\d,]+(?:\.\d+)?/g)].some((match) => {
-    const compact = match[0].replaceAll(",", "");
-    return !answer.lockedFacts.some((fact) => fact.includes(compact) || fact.includes(match[0]));
-  });
-  if (extraMoney) {
-    return { ...answer, mode: "data_lookup", explanation: null };
+  if (!explanation) {
+    return {
+      ...answer,
+      mode: options.modelRan ? "on_device_unused" : "data_lookup",
+      explanation: null,
+    };
   }
-  return { ...answer, mode: "on_device_explanation", explanation };
+  const choice = parseApprovedExplanationChoice(explanation);
+  if (!choice) {
+    return { ...answer, mode: "on_device_unused", explanation: null };
+  }
+  return {
+    ...answer,
+    mode: "on_device_explanation",
+    explanation: RESTATE_EXPLANATION,
+  };
 }
 
 export function answerKnownIntent(context: AskContext, question: string, intent: AskIntent): PulseAnswer {

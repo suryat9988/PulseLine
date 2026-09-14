@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   answerKnownIntent,
   answerQuestion,
@@ -53,6 +53,17 @@ export function AskPane({
   const [progress, setProgress] = useState(0);
   const [progressText, setProgressText] = useState("");
   const [modelError, setModelError] = useState("");
+  const [visibleIndex, setVisibleIndex] = useState(0);
+  const swipeStart = useRef<number | null>(null);
+  const index = answers.length === 0 ? 0 : Math.min(visibleIndex, answers.length - 1);
+  const current = answers[index] ?? null;
+
+  useEffect(() => {
+    setVisibleIndex((currentIndex) => {
+      if (answers.length === 0) return 0;
+      return Math.min(currentIndex, answers.length - 1);
+    });
+  }, [answers.length]);
 
   const selectedAnswers = answers.filter((answer) => selectedIds.includes(answer.id) && canExportAnswer(answer));
   const exportState = buildExportDocument(context.hospitalName, selectedAnswers);
@@ -63,7 +74,19 @@ export function AskPane({
   const moreChips = chips.filter((chip) => !primaryChips.some((primary) => primary.id === chip.id));
 
   function push(answer: PulseAnswer) {
-    onAnswers([...answers, { ...answer, id: `${answer.id}:${answers.length}` }]);
+    const next = [...answers, { ...answer, id: `${answer.id}:${answers.length}` }];
+    onAnswers(next);
+    setVisibleIndex(next.length - 1);
+  }
+
+  function move(next: number) {
+    if (answers.length === 0) return;
+    setVisibleIndex(Math.max(0, Math.min(next, answers.length - 1)));
+  }
+
+  function clearConversation() {
+    setVisibleIndex(0);
+    onClear();
   }
 
   async function maybeExplain(answer: PulseAnswer): Promise<PulseAnswer> {
@@ -142,7 +165,7 @@ export function AskPane({
         <div className="ask-head">
           <h3 id="ask-title">Ask about this hospital</h3>
           {answers.length > 0 ? (
-            <button type="button" className="text-link" onClick={onClear}>
+            <button type="button" className="text-link" onClick={clearConversation}>
               Clear conversation
             </button>
           ) : null}
@@ -173,30 +196,78 @@ export function AskPane({
           </div>
         ) : null}
 
-        <ol className="answer-list">
-          {answers.map((answer) => (
-            <li key={answer.id}>
+        {current ? (
+          <div className="answer-deck">
+            <div className="card-nav">
+              <button
+                type="button"
+                className="card-arrow"
+                aria-label="Previous question"
+                disabled={index === 0}
+                onClick={() => move(index - 1)}
+              >
+                ←
+              </button>
+              <p className="card-position">
+                {index + 1} of {answers.length}
+              </p>
+              <button
+                type="button"
+                className="card-arrow"
+                aria-label="Next question"
+                disabled={index >= answers.length - 1}
+                onClick={() => move(index + 1)}
+              >
+                →
+              </button>
+            </div>
+            <div
+              className="answer-slide"
+              tabIndex={0}
+              onKeyDown={(event) => {
+                if (event.key === "ArrowLeft") {
+                  event.preventDefault();
+                  move(index - 1);
+                }
+                if (event.key === "ArrowRight") {
+                  event.preventDefault();
+                  move(index + 1);
+                }
+              }}
+              onTouchStart={(event) => {
+                swipeStart.current = event.changedTouches[0]?.clientX ?? null;
+              }}
+              onTouchEnd={(event) => {
+                const start = swipeStart.current;
+                const end = event.changedTouches[0]?.clientX;
+                swipeStart.current = null;
+                if (start == null || end == null) return;
+                const delta = end - start;
+                if (delta > 40) move(index - 1);
+                if (delta < -40) move(index + 1);
+              }}
+            >
               <AnswerCard
-                answer={answer}
-                selected={selectedIds.includes(answer.id)}
+                answer={current}
+                selected={selectedIds.includes(current.id)}
                 onToggle={toggle}
                 onDownload={(item) => void downloadOne(item)}
               />
-              {answer.status === "clarification"
-                ? answer.clarificationOptions.map((option) => (
-                    <button key={option.id} type="button" className="chip" onClick={() => void resolve(option, answer)}>
+              {current.status === "clarification"
+                ? current.clarificationOptions.map((option) => (
+                    <button key={option.id} type="button" className="chip" onClick={() => void resolve(option, current)}>
                       {option.label}
                     </button>
                   ))
                 : null}
-              {answer.suggestedFollowUps.map((follow) => (
+              {current.suggestedFollowUps.map((follow) => (
                 <button key={follow} type="button" className="chip chip-quiet" onClick={() => void ask(follow)}>
                   {follow}
                 </button>
               ))}
-            </li>
-          ))}
-        </ol>
+            </div>
+          </div>
+        ) : null}
       </section>
 
       <form

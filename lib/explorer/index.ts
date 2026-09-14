@@ -17,6 +17,7 @@ export {
 } from "./filters.ts";
 export { CITY_COUNTY, COORDINATE_PENDING_NOTE, locateFromCity, normalizeZip, zipMatches } from "./locations.ts";
 export {
+  allHospitalSuggestions,
   allKentuckyArea,
   areaFromCounty,
   areaFromSuggestion,

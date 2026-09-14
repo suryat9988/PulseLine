@@ -5,6 +5,7 @@ import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { adaptEvidencePack } from "../lib/adapt-evidence.ts";
 import {
+  allHospitalSuggestions,
   allKentuckyArea,
   areaFromSuggestion,
   buildExplorerCatalog,
@@ -22,7 +23,7 @@ import {
   visibleSelectedHospitalId,
   ZIP_OUTLINE_UNAVAILABLE,
 } from "../lib/explorer/index.ts";
-import { geometryBounds, padViewBox, projectedBounds } from "../lib/geo/bounds.ts";
+import { fitAspectViewBox, geometryBounds, padViewBox, projectedBounds, scaleViewBox } from "../lib/geo/bounds.ts";
 import { geometryToPath, projectKentucky } from "../lib/geo/project.ts";
 import { loadResearchDashboard } from "../lib/pipeline.ts";
 import { SCALE_FIXTURE_SIZE, scaleExplorerFixture } from "./fixtures/explorer-scale.ts";
@@ -202,11 +203,20 @@ describe("map and list matching", () => {
     assert.equal(pendingMarkers.length, catalog.length);
   });
 
+  it("lists every hospital when search is asked to show all", () => {
+    const listed = allHospitalSuggestions(catalog);
+    assert.equal(listed.length, catalog.length);
+    assert.ok(listed.every((item) => item.kind === "hospital"));
+    assert.equal(buildSearchSuggestions(catalog, [], "").length, 0);
+  });
+
   it("suggests hospitals, cities, counties, and facility ZIPs without inventing ZCTA outlines", () => {
     const countyList = counties.features.map((feature) => ({ fips: feature.id, name: feature.properties.name }));
     const suggestions = buildSearchSuggestions(catalog, countyList, "jackson");
     assert.ok(suggestions.some((item) => item.kind === "city" && item.label.toLowerCase() === "jackson"));
     assert.ok(suggestions.some((item) => item.kind === "hospital" && item.label.includes("Kentucky River")));
+    const breathittCounty = buildSearchSuggestions(catalog, countyList, "Breathitt County");
+    assert.ok(breathittCounty.some((item) => item.kind === "hospital" && item.label.includes("Kentucky River")));
     const jefferson = buildSearchSuggestions(catalog, countyList, "jefferson");
     const county = jefferson.find((item) => item.kind === "county" && item.countyName === "Jefferson");
     assert.ok(county);
@@ -254,6 +264,11 @@ describe("map and list matching", () => {
     assert.ok(box);
     const padded = padViewBox(box, 24);
     assert.ok(padded.width <= 800 && padded.height <= 480);
+    const fitted = fitAspectViewBox(box, 800, 480, 28);
+    assert.ok(Math.abs(fitted.width / fitted.height - 800 / 480) < 0.001);
+    const closer = scaleViewBox(fitted, 2);
+    assert.ok(closer.width < fitted.width && closer.height < fitted.height);
+    assert.ok(Math.abs(closer.x + closer.width / 2 - (fitted.x + fitted.width / 2)) < 0.001);
   });
 
   it("clusters overlapping fixture coordinates without touching production records", () => {

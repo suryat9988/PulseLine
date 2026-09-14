@@ -1,5 +1,4 @@
-import { canExportAnswer, formatAnswerText, type PulseAnswer } from "../../../lib/ask/index.ts";
-import { longFiscalRange } from "../format.ts";
+import { answerModeLabel, answerPeriodRows, canExportAnswer, formatAnswerText, type PulseAnswer } from "../../../lib/ask/index.ts";
 
 function cardQuestion(question: string): string {
   if (
@@ -23,8 +22,7 @@ export function AnswerCard({
   onDownload: (answer: PulseAnswer) => void;
 }) {
   const complete = canExportAnswer(answer);
-  const period =
-    answer.periods[0] != null ? longFiscalRange(answer.periods[0].start, answer.periods[0].end) : answer.periodLabel;
+  const periodRows = answerPeriodRows(answer);
   const kindNote =
     answer.kind === "reported"
       ? "Reported CMS value, rounded. Not a current estimate."
@@ -44,17 +42,21 @@ export function AnswerCard({
       <p className="answer-hospital">{answer.hospitalName}</p>
       {answer.headline ? <p className="answer-headline">{answer.headline}</p> : <p className="answer-statement">{answer.statement}</p>}
       {answer.headline ? <p className="visually-hidden">{answer.statement}</p> : null}
-      {period ? (
-        <p className="answer-meta">
-          <span className="period-prefix">Fiscal period: </span>
-          {period}
-        </p>
+      {periodRows.length > 0 ? (
+        <div className="answer-periods">
+          {periodRows.map((row) => (
+            <p className="answer-meta" key={`${row.label}:${row.value}`}>
+              <span className="period-prefix">{row.label}: </span>
+              {row.value}
+            </p>
+          ))}
+        </div>
       ) : null}
       <p className="answer-meta">{kindNote}</p>
-      <p className="answer-meta">
-        {answer.mode === "on_device_explanation" ? "On-device explanation of approved PulseLine data." : "Data lookup. Generative AI did not run."}
-      </p>
-      {answer.explanation ? <p className="muted small">{answer.explanation}</p> : null}
+      <p className="answer-meta">{answerModeLabel(answer.mode)}</p>
+      {answer.mode === "on_device_explanation" && answer.explanation ? (
+        <p className="muted small">{answer.explanation}</p>
+      ) : null}
       {answer.sources.length > 0 ? (
         <div className="source-box">
           {answer.sources.map((source) => (

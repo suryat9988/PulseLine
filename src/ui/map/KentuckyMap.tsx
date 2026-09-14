@@ -1,8 +1,16 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import kyCounties from "../../../data/geo/ky-counties.json";
 import type { AreaSelection } from "../../../lib/explorer/search.ts";
 import { matchingCountyFips, pluralHospitals, type ExplorerHospital } from "../../../lib/explorer/index.ts";
-import { padViewBox, projectedBounds, viewBoxString } from "../../../lib/geo/bounds.ts";
+import {
+  MAP_ZOOM_FIT,
+  MAP_ZOOM_STEP,
+  clampMapZoom,
+  fitAspectViewBox,
+  projectedBounds,
+  scaleViewBox,
+  viewBoxString,
+} from "../../../lib/geo/bounds.ts";
 import { geometryCentroid, geometryToPath, projectKentucky } from "../../../lib/geo/project.ts";
 
 const WIDTH = 800;
@@ -28,7 +36,6 @@ export function KentuckyMap({
   onSelectCounty,
   onSelectHospital,
   onShowAll,
-  onBackToArea,
 }: {
   hospitals: ExplorerHospital[];
   area: AreaSelection;
@@ -37,8 +44,8 @@ export function KentuckyMap({
   onSelectCounty: (fips: string, name: string) => void;
   onSelectHospital?: (hospitalId: string) => void;
   onShowAll: () => void;
-  onBackToArea: () => void;
 }) {
+  const [zoom, setZoom] = useState(MAP_ZOOM_FIT);
   const selectedHospital = hospitals.find((item) => item.hospitalId === selectedHospitalId) ?? null;
   const matchFips = useMemo(() => new Set(matchingCountyFips(hospitals, area)), [hospitals, area]);
   const focusFips =
@@ -47,27 +54,68 @@ export function KentuckyMap({
       : area.outline === "county"
         ? area.countyFips
         : null;
-  const viewBox = useMemo(() => {
-    if (mapFocus === "kentucky" || !focusFips) return viewBoxString({ x: 0, y: 0, width: WIDTH, height: HEIGHT });
+  const fitBox = useMemo(() => {
+    const statewide = { x: 0, y: 0, width: WIDTH, height: HEIGHT };
+    if (mapFocus === "kentucky" || !focusFips) return statewide;
     const feature = features.find((item) => item.id === focusFips);
-    if (!feature) return viewBoxString({ x: 0, y: 0, width: WIDTH, height: HEIGHT });
+    if (!feature) return statewide;
     const box = projectedBounds(feature.geometry, WIDTH, HEIGHT);
-    if (!box) return viewBoxString({ x: 0, y: 0, width: WIDTH, height: HEIGHT });
-    return viewBoxString(padViewBox(box, mapFocus === "hospital" ? 18 : 28));
+    if (!box) return statewide;
+    return fitAspectViewBox(box, WIDTH, HEIGHT, mapFocus === "hospital" ? 18 : 28);
   }, [focusFips, mapFocus]);
+
+  useEffect(() => {
+    setZoom(MAP_ZOOM_FIT);
+  }, [focusFips, mapFocus]);
+
+  const viewBox = useMemo(() => viewBoxString(scaleViewBox(fitBox, zoom)), [fitBox, zoom]);
+
+  const svgRef = useRef<SVGSVGElement>(null);
+
+  function adjustZoom(delta: number) {
+    setZoom((current) => clampMapZoom(current + delta));
+  }
+
+  useEffect(() => {
+    const svg = svgRef.current;
+    if (!svg) return;
+    function onWheel(event: WheelEvent) {
+      const focused = svg === document.activeElement || svg.contains(document.activeElement);
+      if (!event.ctrlKey && !event.metaKey && !focused) return;
+      event.preventDefault();
+      adjustZoom(event.deltaY < 0 ? MAP_ZOOM_STEP : -MAP_ZOOM_STEP);
+    }
+    svg.addEventListener("wheel", onWheel, { passive: false });
+    return () => svg.removeEventListener("wheel", onWheel);
+  }, []);
+
   const markers = hospitals.filter((hospital) => hospital.latitude != null && hospital.longitude != null);
 
   return (
     <figure className="ky-map">
       <div className="map-toolbar">
-        <button type="button" className="chip" onClick={onBackToArea} disabled={area.kind === "all" && mapFocus === "kentucky"}>
-          Back to selected area
-        </button>
         <button type="button" className="chip chip-quiet" onClick={onShowAll}>
           Show all Kentucky
         </button>
       </div>
-      <svg viewBox={viewBox} role="img" aria-label="Kentucky counties. Shading is hospital count in the current dataset, not a risk score.">
+      <svg
+        ref={svgRef}
+        viewBox={viewBox}
+        preserveAspectRatio="xMidYMid meet"
+        role="img"
+        tabIndex={0}
+        aria-label="Kentucky counties. Shading is hospital count in the current dataset, not a risk score. Zoom with Ctrl + scroll, or click the map and scroll. Scrolling without Ctrl still moves the page."
+        onKeyDown={(event) => {
+          if (event.key === "+" || event.key === "=") {
+            event.preventDefault();
+            adjustZoom(MAP_ZOOM_STEP);
+          }
+          if (event.key === "-" || event.key === "_") {
+            event.preventDefault();
+            adjustZoom(-MAP_ZOOM_STEP);
+          }
+        }}
+      >
         <title>Kentucky hospital explorer map</title>
         {features.map((feature) => {
           const inArea = matchFips.has(feature.id) || feature.id === area.countyFips;
@@ -146,7 +194,9 @@ export function KentuckyMap({
           "County shading is dataset hospital presence, not risk. Boundaries: U.S. Census Bureau cartographic county polygons, public domain. No commercial basemap and no runtime geocoding."}
         {markers.length === 0
           ? " Hospital street markers are omitted because sourced latitude and longitude are not verified."
-          : " Markers appear only for hospitals with sourced coordinates."}
+          : " Markers appear only for hospitals with sourced coordinates."}{" "}
+        After a county is selected, zoom with Ctrl + scroll, or click the map and use + and −. Scrolling without Ctrl
+        still moves the page.
       </figcaption>
     </figure>
   );

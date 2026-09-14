@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { FinancialViewId } from "../../lib/charts/views.ts";
 import { diligenceGaps, EMPTY_EVENT_LEDGER } from "../../lib/diligence/gaps.ts";
 import { evaluateScenario, resetScenarioInputs } from "../../lib/scenario/whatif.ts";
@@ -10,8 +10,8 @@ import { ContextObservations, EventTimeline } from "./EventTimeline.tsx";
 import { FinancialCards } from "./finance/FinancialCards.tsx";
 import { FinancialStatements } from "./finance/FinancialStatements.tsx";
 import { FinancialView } from "./finance/FinancialView.tsx";
-import { GuidedBrief } from "./finance/GuidedBrief.tsx";
 import { PeriodMeta } from "./finance/PeriodMeta.tsx";
+import { WhatChangedPanel } from "./finance/WhatChanged.tsx";
 import { factorDisplay, StatusGlyph } from "./hospital-display.tsx";
 import { fiscalLabel, shortFiscalRange, statusClass } from "./format.ts";
 import { WhatIfPanel } from "./scenario/WhatIfPanel.tsx";
@@ -40,41 +40,22 @@ function useWideSplit() {
 
 function OverviewPane({
   view,
-  research,
   reports,
-  events,
-  pending,
   financialView,
   onFinancialView,
   onOpenAbout,
 }: {
   view: HospitalView | null;
-  research: EvidenceHospital | null;
   reports: HospitalView[];
-  events: StructuralEvent[];
-  pending: boolean;
   financialView: FinancialViewId;
   onFinancialView: (id: FinancialViewId) => void;
   onOpenAbout?: () => void;
 }) {
-  const gaps = diligenceGaps({ view, research, events, observations: [], pending });
   if (!view) {
-    return (
-      <section className="content-panel">
-        <h3>Overview</h3>
-        <p className="status-pill status-pending">Financial data pending</p>
-        <p>No CCN, financials, score, charts, or scenario baseline were invented for {research?.name ?? "this case"}.</p>
-        <h4>Sourced events remain available</h4>
-        {events.length > 0 ? <EventTimeline events={events} /> : <p className="tiny">{EMPTY_EVENT_LEDGER}</p>}
-        <h4>What requires verification</h4>
-        <GapList gaps={gaps} />
-      </section>
-    );
+    return null;
   }
   return (
     <section className="content-panel">
-      <GuidedBrief view={view} reports={reports} compact />
-      <FinancialCards view={view} />
       <FinancialView
         key={view.hospital.hospitalId}
         view={view}
@@ -82,6 +63,7 @@ function OverviewPane({
         selectedView={financialView}
         onViewChange={onFinancialView}
       />
+      <FinancialCards view={view} />
       <aside className="score-secondary">
         <p className="label">Experimental concern score</p>
         <p className="tiny">Secondary to the financial records. Not acquisition attractiveness or a forecast.</p>
@@ -103,10 +85,9 @@ function FinancialsPane({ view, reports }: { view: HospitalView | null; reports:
   }
   return (
     <section className="content-panel">
-      <h3>Financial statements</h3>
       <FinancialStatements reports={reports} />
-      <details>
-        <summary>Metric definitions and sources</summary>
+      <details className="metric-source-panel">
+        <summary>Score metric formulas and sources</summary>
         <ul className="signal-list">
           {view.financial.factors.map((factor) => (
             <li key={factor.id}>
@@ -207,19 +188,6 @@ function EvidenceShelf({
   );
 }
 
-function ContextRail({ pending }: { pending: boolean }) {
-  return (
-    <aside className="context-rail" aria-label="Keep the context">
-      <h3>Keep the context</h3>
-      <p>This answer uses only the selected hospital’s public data.</p>
-      <p>Missing information stays visible. A property sale does not establish a provider ownership change.</p>
-      {pending ? <p>Research cases have no score or scenario model until financial data is available.</p> : null}
-      <h4>Evidence notes</h4>
-      <p>Download selected answers only. These are evidence notes, not a completed diligence assessment.</p>
-    </aside>
-  );
-}
-
 export function HospitalWorkspace({
   title,
   subtitle,
@@ -269,6 +237,10 @@ export function HospitalWorkspace({
   const askWithScenario = useMemo(() => ({ ...askContext, scenario }), [askContext, scenario]);
   const wide = useWideSplit();
   const headingRef = useRef<HTMLHeadingElement>(null);
+  const barRef = useRef<HTMLDivElement>(null);
+  const [barSentinel, setBarSentinel] = useState<HTMLDivElement | null>(null);
+  const [compactBar, setCompactBar] = useState(false);
+  const [slotMinHeight, setSlotMinHeight] = useState(0);
   const onCloseRef = useRef(onClose);
   const openedId = view?.hospital.hospitalId ?? research?.hospitalId ?? title;
   const ccnLine = view
@@ -301,31 +273,74 @@ export function HospitalWorkspace({
     return () => document.removeEventListener("keydown", onKeyDown);
   }, [openedId]);
 
+  useEffect(() => {
+    setCompactBar(false);
+    setSlotMinHeight(0);
+  }, [openedId]);
+
+  useLayoutEffect(() => {
+    const bar = barRef.current;
+    if (!bar || compactBar) return;
+    const sync = () => setSlotMinHeight(bar.offsetHeight);
+    sync();
+    const observer = new ResizeObserver(sync);
+    observer.observe(bar);
+    return () => observer.disconnect();
+  }, [compactBar, openedId, title, pending, reports.length, view?.hospital.id]);
+
+  useEffect(() => {
+    if (!barSentinel) return;
+    let frame = 0;
+    function update() {
+      const top = barSentinel.getBoundingClientRect().top;
+      setCompactBar((current) => {
+        if (!current && top < -24) return true;
+        if (current && top >= 8) return false;
+        return current;
+      });
+    }
+    function onScroll() {
+      if (frame) return;
+      frame = window.requestAnimationFrame(() => {
+        frame = 0;
+        update();
+      });
+    }
+    update();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+      if (frame) window.cancelAnimationFrame(frame);
+    };
+  }, [barSentinel]);
+
   const showAskDesk = pane === "ask" && wide;
 
   return (
     <section id="hospital-financials" className="workspace is-inline" aria-labelledby="workspace-title">
-      <div className="hospital-bar is-sticky">
-        <div>
+      <div ref={setBarSentinel} className="hospital-bar-sentinel" aria-hidden="true" />
+      <div className="hospital-bar-slot" style={slotMinHeight > 0 ? { minHeight: slotMinHeight } : undefined}>
+        <div ref={barRef} className={`hospital-bar is-sticky${compactBar ? " is-compact" : ""}`}>
+        <div className="hospital-bar-identity">
           <h2 id="workspace-title" ref={headingRef} tabIndex={-1}>
             {title}
           </h2>
-          <p className="muted">
-            {[subtitle, ccnLine].filter(Boolean).join(" · ")}
-            {pending ? " · Financial data pending" : ""}
-          </p>
-          {view ? (
-            <p className="tiny">
-              Identity: {view.hospital.dataQuality.identityStatus === "unresolved" ? "review required" : "no PulseLine identity flag"}
+          <div className="hospital-bar-meta">
+            <p className="muted">
+              {[subtitle, ccnLine].filter(Boolean).join(" · ")}
+              {pending ? " · Financial data pending" : ""}
             </p>
-          ) : (
-            <p className="tiny">Identity fields were not invented for this research case.</p>
-          )}
+            {view?.hospital.dataQuality.identityStatus === "unresolved" ? (
+              <p className="tiny">Identity: review required</p>
+            ) : null}
+          </div>
         </div>
         <div className="hospital-bar-actions">
           {reports.length > 0 ? (
             <label className="period-select sticky-period">
-              <span>Reporting period</span>
+              <span className={compactBar ? "visually-hidden" : undefined}>Reporting period</span>
               <select value={view?.hospital.id ?? ""} onChange={(event) => onSelectReport(event.target.value)}>
                 {reports.map((report) => (
                   <option key={report.hospital.id} value={report.hospital.id}>
@@ -343,12 +358,15 @@ export function HospitalWorkspace({
           ) : view ? (
             <p className={`status-pill ${statusClass(view.financial.status)}`}>
               <StatusGlyph status={view.financial.status} />
-              Experimental score {view.financial.score ?? "none"}
+              {compactBar
+                ? `Experimental ${view.financial.score ?? "none"} · ${view.financial.status}`
+                : `Experimental score ${view.financial.score ?? "none"}`}
             </p>
           ) : null}
           <button type="button" className="chip chip-quiet" onClick={onClose}>
             Close
           </button>
+        </div>
         </div>
       </div>
       {view ? <PeriodMeta view={view} /> : null}
@@ -379,17 +397,13 @@ export function HospitalWorkspace({
             onSelectedIds={onSelectedIds}
             onClear={onClearConversation}
           />
-          <ContextRail pending={pending} />
         </div>
       ) : (
         <div className="workspace-body">
           {pane === "overview" ? (
             <OverviewPane
               view={view}
-              research={research}
               reports={reports}
-              events={events}
-              pending={pending}
               financialView={financialView}
               onFinancialView={setFinancialView}
               onOpenAbout={onOpenAbout}
@@ -425,6 +439,24 @@ export function HospitalWorkspace({
           ) : null}
         </div>
       )}
+
+      {pane === "overview" ? (
+        <WhatChangedPanel
+          view={view}
+          reports={reports}
+          pending={pending}
+          research={research}
+          events={events}
+          observations={observations}
+          hospitalName={title}
+          onOpenChart={(id) => {
+            setFinancialView(id);
+            window.requestAnimationFrame(() => {
+              document.getElementById("financial-chart-region")?.focus();
+            });
+          }}
+        />
+      ) : null}
     </section>
   );
 }

@@ -12,7 +12,7 @@ export type AnswerKind = (typeof ANSWER_KINDS)[number];
 export const ANSWER_STATUSES = ["complete", "incomplete", "unavailable", "clarification", "declined"] as const;
 export type AnswerStatus = (typeof ANSWER_STATUSES)[number];
 
-export const ANSWER_MODES = ["data_lookup", "on_device_explanation"] as const;
+export const ANSWER_MODES = ["data_lookup", "on_device_explanation", "on_device_unused"] as const;
 export type AnswerMode = (typeof ANSWER_MODES)[number];
 
 export const ASK_INTENTS = [

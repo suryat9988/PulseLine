@@ -7,7 +7,6 @@ import {
   viewHasValues,
   type FinancialViewId,
 } from "../../../lib/charts/views.ts";
-import { guidedBrief } from "../../../lib/finance/index.ts";
 import type { HospitalView } from "../../types.ts";
 import { FinancialChart } from "../charts/FinancialChart.tsx";
 import { shortFiscalRange } from "../format.ts";
@@ -35,7 +34,6 @@ export function FinancialView({
   const usable = ranged.length > 0 ? ranged : ordered;
   const pair = seriesForView(selectedView, usable);
   const available = viewHasValues(selectedView, reports);
-  const brief = guidedBrief(view, reports);
   const utilization = utilizationSeries(reports);
 
   return (
@@ -78,20 +76,21 @@ export function FinancialView({
             ))}
           </select>
         </label>
-        <p className="tiny chart-unit-note">{option.unitNote}</p>
+        <p className="tiny chart-unit-note">
+          {option.unitNote}. Selected report {shortFiscalRange(view.hospital.fiscalYearStart, view.hospital.fiscalYearEnd)}.
+        </p>
       </div>
 
       <div className="financial-view-layout">
         <aside className="chart-takeaway">
-          <h3>What changed</h3>
-          <p>{brief.changes[0]?.text ?? "No supported comparison is available."}</p>
           <h3>What this measure means</h3>
           <p>{option.definition}</p>
-          <h3>What needs verification</h3>
-          <p>{brief.investigate[0]?.text ?? "Publication dates and reporting-entity scope still need verification."}</p>
-          <p className="tiny">A few historical reports do not establish a predictive trend.</p>
+          <p className="tiny">
+            The comparison above uses the selected report and the immediately preceding available report. Changing this
+            chart does not change that pair.
+          </p>
         </aside>
-        <div className="chart-stage">
+        <div id="financial-chart-region" className="chart-stage" tabIndex={-1}>
           {!available ? (
             <p className="empty-copy">
               {option.label} is not available from the current reports. The option stays listed so the gap is visible.
@@ -104,7 +103,6 @@ export function FinancialView({
                   series={pair.secondary}
                   display={display}
                   onToggleDisplay={setDisplay}
-                  expandable={false}
                 />
               ) : null}
             </>
@@ -122,7 +120,7 @@ export function FinancialView({
 
       <details className="operational-separate">
         <summary>Operational utilization (not a financial result)</summary>
-        <FinancialChart series={utilization} compact expandable={false} />
+        <FinancialChart series={utilization} compact />
       </details>
     </section>
   );

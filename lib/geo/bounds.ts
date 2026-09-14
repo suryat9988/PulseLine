@@ -85,6 +85,51 @@ export function viewBoxString(box: ViewBox): string {
   return `${box.x} ${box.y} ${box.width} ${box.height}`;
 }
 
+/** Keep the map frame’s aspect ratio so a county zoom does not collapse the SVG into a square. */
+export function fitAspectViewBox(
+  box: ViewBox,
+  aspectWidth = 800,
+  aspectHeight = 480,
+  padding = 28,
+): ViewBox {
+  const padded = {
+    x: box.x - padding,
+    y: box.y - padding,
+    width: Math.max(1, box.width + padding * 2),
+    height: Math.max(1, box.height + padding * 2),
+  };
+  const target = aspectWidth / aspectHeight;
+  const current = padded.width / padded.height;
+  if (current > target) {
+    const height = padded.width / target;
+    return { x: padded.x, y: padded.y - (height - padded.height) / 2, width: padded.width, height };
+  }
+  const width = padded.height * target;
+  return { x: padded.x - (width - padded.width) / 2, y: padded.y, width, height: padded.height };
+}
+
+export function scaleViewBox(box: ViewBox, scale: number): ViewBox {
+  const safe = Number.isFinite(scale) && scale > 0 ? scale : 1;
+  const width = box.width / safe;
+  const height = box.height / safe;
+  return {
+    x: box.x + (box.width - width) / 2,
+    y: box.y + (box.height - height) / 2,
+    width,
+    height,
+  };
+}
+
+export const MAP_ZOOM_MIN = 0.75;
+export const MAP_ZOOM_FIT = 1;
+export const MAP_ZOOM_MAX = 6;
+export const MAP_ZOOM_STEP = 0.5;
+
+export function clampMapZoom(zoom: number): number {
+  if (!Number.isFinite(zoom)) return MAP_ZOOM_FIT;
+  return Math.min(MAP_ZOOM_MAX, Math.max(MAP_ZOOM_MIN, zoom));
+}
+
 export function fitsKentucky(bounds: LonLatBounds | null): boolean {
   if (!bounds) return false;
   return (

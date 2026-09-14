@@ -1,7 +1,44 @@
 import { useRef } from "react";
+import { MEASURES } from "../../../lib/finance/index.ts";
 import { clampIndex, type ExplorerHospital } from "../../../lib/explorer/index.ts";
 import { StatusGlyph } from "../hospital-display.tsx";
 import { money, statusClass } from "../format.ts";
+
+const CARD_METRIC_TIPS = {
+  net_patient_revenue: {
+    meaning: "Money this hospital reported earning from patient care in the latest fiscal report, after usual billing adjustments.",
+    caveat: "Not every dollar the hospital took in, and not a price or valuation.",
+  },
+  patient_service_expenses: {
+    meaning: "What this hospital reported spending to provide patient care in that same fiscal report.",
+    caveat: "Not a complete operating-cost total, and not the same as cash paid out.",
+  },
+  cash: {
+    meaning: "Cash the hospital reported on hand and in banks at the end of that fiscal report.",
+    caveat: "A snapshot only — not how long the cash will last, and not checked for restricted funds.",
+  },
+} as const;
+
+function CardMetric({
+  measureId,
+  value,
+}: {
+  measureId: keyof typeof CARD_METRIC_TIPS;
+  value: number | null;
+}) {
+  const measure = MEASURES[measureId];
+  const tip = CARD_METRIC_TIPS[measureId];
+  const tipId = `card-metric-${measureId}`;
+  return (
+    <div className="card-metric" tabIndex={0} aria-describedby={tipId}>
+      <dt>{measure.label}</dt>
+      <dd>{money(value)}</dd>
+      <p id={tipId} className="card-metric-tip" role="tooltip">
+        {tip.meaning} {tip.caveat}
+      </p>
+    </div>
+  );
+}
 
 export interface HospitalCardModel {
   hospital: ExplorerHospital;
@@ -103,18 +140,9 @@ export function HospitalCards({
           </p>
         ) : (
           <dl className="card-metrics">
-            <div>
-              <dt>Net patient revenue</dt>
-              <dd>{money(card.netPatientRevenue)}</dd>
-            </div>
-            <div>
-              <dt>Patient-service expenses</dt>
-              <dd>{money(card.expenses)}</dd>
-            </div>
-            <div>
-              <dt>Cash</dt>
-              <dd>{money(card.cash)}</dd>
-            </div>
+            <CardMetric measureId="net_patient_revenue" value={card.netPatientRevenue} />
+            <CardMetric measureId="patient_service_expenses" value={card.expenses} />
+            <CardMetric measureId="cash" value={card.cash} />
           </dl>
         )}
         <p className="tiny">Coverage: {hospital.dataCoverage === "pending" ? "Pending" : hospital.dataCoverage}</p>

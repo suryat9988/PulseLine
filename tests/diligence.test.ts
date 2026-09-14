@@ -4,7 +4,7 @@ import { dirname, join } from "node:path";
 import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { adaptEvidencePack, eventsForHospital, observationsForHospital } from "../lib/adapt-evidence.ts";
-import { diligenceGaps, EMPTY_EVENT_LEDGER, GAP_KINDS } from "../lib/diligence/gaps.ts";
+import { briefEvidenceGaps, diligenceGaps, EMPTY_EVENT_LEDGER, GAP_KINDS } from "../lib/diligence/gaps.ts";
 import { eventScopeLabel, eventVerificationLabel, VERIFICATION_LIMIT } from "../lib/diligence/events.ts";
 import { loadResearchDashboard } from "../lib/pipeline.ts";
 
@@ -54,6 +54,41 @@ describe("diligence evidence gaps", () => {
     });
     assert.ok(gaps.some((gap) => gap.id === "financials_pending" && gap.kind === "missing_from_pulseline"));
     assert.ok(!gaps.some((gap) => /stable|watch|high concern/i.test(gap.label)));
+  });
+
+  it("does not invent period-length comparison gaps for pending hospitals", () => {
+    const research = evidence.ledger?.hospitals.find((item) => item.name.includes("Paul B. Hall"));
+    assert.ok(research);
+    const grouped = briefEvidenceGaps({
+      view: null,
+      research,
+      events: eventsForHospital(evidence.ledger, research.hospitalId),
+      observations: observationsForHospital(evidence.ledger, research.hospitalId),
+      pending: true,
+      durationOk: false,
+    });
+    const all = [...grouped.priority, ...grouped.additional];
+    assert.ok(all.some((gap) => gap.id === "financials_pending"));
+    assert.ok(!all.some((gap) => gap.id === "unequal_periods" || gap.id === "missing_period_length"));
+  });
+
+  it("emits missing-length and unequal-length gaps only from explicit duration states", () => {
+    const river = loaded.facilities.find((item) => item.name.includes("Kentucky River"));
+    assert.ok(river);
+    const base = {
+      view: river.latest,
+      research: null,
+      events: eventsForHospital(evidence.ledger, river.hospitalId),
+      observations: observationsForHospital(evidence.ledger, river.hospitalId),
+      pending: false,
+    };
+    const missing = [...briefEvidenceGaps({ ...base, durationStatus: "unknown" }).priority, ...briefEvidenceGaps({ ...base, durationStatus: "unknown" }).additional];
+    const fail = [...briefEvidenceGaps({ ...base, durationStatus: "fail" }).priority, ...briefEvidenceGaps({ ...base, durationStatus: "fail" }).additional];
+    const pass = [...briefEvidenceGaps({ ...base, durationStatus: "pass" }).priority, ...briefEvidenceGaps({ ...base, durationStatus: "pass" }).additional];
+    assert.ok(missing.some((gap) => gap.id === "missing_period_length"));
+    assert.match(missing.find((gap) => gap.id === "missing_period_length")?.detail ?? "", /does not describe those lengths as being within 30 days/i);
+    assert.ok(fail.some((gap) => gap.id === "unequal_periods"));
+    assert.ok(!pass.some((gap) => gap.id === "unequal_periods" || gap.id === "missing_period_length"));
   });
 });
 

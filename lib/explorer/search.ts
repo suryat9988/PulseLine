@@ -56,6 +56,26 @@ function hospitalLocation(hospital: ExplorerHospital): string {
     .join(" · ");
 }
 
+function hospitalToSuggestion(hospital: ExplorerHospital): SearchSuggestion {
+  return {
+    id: `hospital:${hospital.hospitalId}`,
+    kind: "hospital",
+    label: hospital.name,
+    detail: hospitalLocation(hospital) || "Location pending",
+    hospitalId: hospital.hospitalId,
+    countyFips: hospital.countyFips,
+    countyName: hospital.county,
+    city: hospital.city,
+    zip: hospital.zip,
+  };
+}
+
+export function allHospitalSuggestions(hospitals: ExplorerHospital[]): SearchSuggestion[] {
+  return [...hospitals]
+    .sort((left, right) => left.name.localeCompare(right.name) || left.hospitalId.localeCompare(right.hospitalId))
+    .map(hospitalToSuggestion);
+}
+
 function countyHospitalCount(hospitals: ExplorerHospital[], fips: string): number {
   return hospitals.filter((hospital) => hospital.countyFips === fips).length;
 }
@@ -186,25 +206,22 @@ export function buildSearchSuggestions(
 
   for (const hospital of hospitals) {
     const name = hospital.name.toLowerCase();
-    const location = hospitalLocation(hospital);
     const tokens = query.split(" ");
-    const hay = [hospital.name, hospital.city, hospital.county, hospital.zip].filter(Boolean).join(" ").toLowerCase();
+    const hay = [
+      hospital.name,
+      hospital.city,
+      hospital.county,
+      hospital.county ? `${hospital.county} county` : null,
+      hospital.zip,
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
     const matchesTokens = tokens.every((token) => hay.includes(token));
     const zipHit = /^\d{3,5}$/.test(zipQuery) && zipMatches(hospital.zip, zipQuery);
     if (!matchesTokens && !zipHit) continue;
     const rank = name.startsWith(query) ? 0 : name.includes(query) ? 1 : zipHit ? 2 : 3;
-    scored.push({
-      id: `hospital:${hospital.hospitalId}`,
-      kind: "hospital",
-      label: hospital.name,
-      detail: location || "Location pending",
-      hospitalId: hospital.hospitalId,
-      countyFips: hospital.countyFips,
-      countyName: hospital.county,
-      city: hospital.city,
-      zip: hospital.zip,
-      rank,
-    });
+    scored.push({ ...hospitalToSuggestion(hospital), rank });
   }
 
   const cities = new Map<string, ExplorerHospital[]>();

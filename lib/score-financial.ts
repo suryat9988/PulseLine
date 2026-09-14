@@ -151,7 +151,7 @@ export function scoreFinancialDistress(hospital: Hospital): FinancialDistressRes
   const { financials, sourceFieldMap } = hospital;
   const limitations: string[] = [
     "Experimental hackathon score, not a validated bankruptcy or closure predictor.",
-    "Thresholds and labels live in lib/scoring-config.ts.",
+    "Thresholds and labels are experimental assumptions.",
     "Only metrics that are present, valid, and definitionally supported are scored.",
   ];
 

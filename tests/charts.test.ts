@@ -54,7 +54,19 @@ describe("financial chart series", () => {
     }));
     const comparability = reportsComparable(stretched);
     assert.equal(comparability.comparable, false);
+    assert.equal(comparability.state, "incompatible");
+    assert.match(comparability.note, /not comparable/i);
     assert.match(comparability.note, /30 days/);
+    const missingDays = breck.reports.map((report) => ({
+      ...report,
+      hospital: { ...report.hospital, periodDays: null },
+    }));
+    const limited = reportsComparable(missingDays);
+    assert.equal(limited.state, "limited");
+    assert.match(limited.note, /Limited comparison/i);
+    assert.match(limited.note, /cannot verify/i);
+    const current = reportsComparable(breck.reports);
+    assert.equal(current.state, "comparable");
   });
 
   it("keeps supported financial views on sourced series and does not interpolate gaps", () => {

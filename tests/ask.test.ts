@@ -7,10 +7,13 @@ import { adaptEvidencePack } from "../lib/adapt-evidence.ts";
 import {
   answerKnownIntent,
   answerQuestion,
+  answerPeriodRows,
   applyModelExplanation,
   buildExportDocument,
   canExportAnswer,
+  formatAnswerText,
   interpretQuestion,
+  RESTATE_EXPLANATION,
   researchAskContext,
   scoredAskContext,
   suggestedQuestions,
@@ -18,6 +21,7 @@ import {
   type AskContext,
   type PulseAnswer,
 } from "../lib/ask/index.ts";
+import { formatWhatChangedAnswer, whatChangedBrief } from "../lib/finance/index.ts";
 import { loadResearchDashboard } from "../lib/pipeline.ts";
 import {
   AskModelLoadCancelled,
@@ -124,6 +128,45 @@ describe("PulseLine Ask retrieval", () => {
     assert.ok(fiscal.periodLabel?.includes("2023-08-31"));
     assert.ok(cohort.periodLabel?.includes("2024-08-31"));
     assert.notEqual(fiscal.statement, cohort.statement);
+  });
+
+  it("uses the same structured What changed results as the visual brief", () => {
+    const context = scored("Morgan");
+    assert.ok(context.selectedReport);
+    const brief = whatChangedBrief({
+      view: context.selectedReport,
+      reports: context.reports,
+      hospitalName: context.hospitalName,
+    });
+    const formatted = formatWhatChangedAnswer(brief);
+    const answer = answerKnownIntent(context, "What changed between these reports?", "revenue_change");
+    assert.equal(answer.status, "complete");
+    assert.equal(answer.statement, formatted.statement);
+    assert.ok(answer.periods.length === 2);
+    assert.ok(answer.sources.length > 0);
+    assert.ok(answer.limitations.some((line) => /publication date|consolidation|two-report|compar/i.test(line)));
+    const exported = formatAnswerText(answer);
+    assert.match(exported, /Hospital:/);
+    assert.match(exported, /Reporting periods:/);
+    assert.match(exported, /Sources:/);
+    assert.match(exported, /Limitations:/);
+    assert.match(exported, /Calculations:/);
+    const document = buildExportDocument(context.hospitalName, [answer], new Date("2026-09-12"));
+    assert.equal(document.ok, true);
+    if (document.ok) {
+      assert.ok(document.document.answers[0]?.limitations.some((line) => /publication date|consolidation|compar/i.test(line)));
+      assert.ok(!JSON.stringify(document.document).includes("hospital_year_reports"));
+    }
+  });
+
+  it("does not invent a comparison for research cases with financial data pending", () => {
+    const context = research("Paul B. Hall");
+    const answer = answerKnownIntent(context, "What changed between these reports?", "revenue_change");
+    assert.equal(answer.status, "unavailable");
+    assert.match(answer.statement, /Financial data pending/);
+    assert.ok(!answer.statement.includes("increased faster"));
+    const chips = suggestedQuestions(context);
+    assert.ok(chips.some((chip) => chip.question === "What changed between these reports?"));
   });
 
   it("compares revenue using both underlying values and periods", () => {
@@ -248,11 +291,70 @@ describe("PulseLine Ask retrieval", () => {
     const failed = applyModelExplanation(answer, null);
     assert.equal(failed.mode, "data_lookup");
     const invented = applyModelExplanation(answer, "Revenue was $9,999,999,999.");
-    assert.equal(invented.mode, "data_lookup");
+    assert.equal(invented.mode, "on_device_unused");
     assert.equal(invented.explanation, null);
     assert.equal(invented.statement, answer.statement);
-    const ok = applyModelExplanation(answer, `This reported figure is ${moneyExact(context.selectedReport?.hospital.financials.netPatientRevenue ?? 0)}.`);
-    assert.equal(ok.mode, "on_device_explanation");
+  });
+
+  it("rejects invented percentages, ratios, dates, hospitals, signs, and predictions", () => {
+    const context = scored("Breckinridge");
+    const answer = answerKnownIntent(
+      context,
+      "What was its net patient revenue for the selected fiscal period?",
+      "net_patient_revenue",
+    );
+    const cases = [
+      "Revenue fell 90% and this hospital will close within six months.",
+      "The current ratio is 0.12 and deteriorating.",
+      "The hospital filed on 2019-08-01 and will be acquired next quarter.",
+      `This is about ${context.otherHospitalNames[0] ?? "another hospital"}, not the selected facility.`,
+      "Cash is positive even though the report shows a negative balance.",
+      "This hospital will be acquired.",
+    ];
+    for (const text of cases) {
+      const rejected = applyModelExplanation(answer, text);
+      assert.equal(rejected.mode, "on_device_unused", text);
+      assert.equal(rejected.explanation, null, text);
+      assert.equal(rejected.statement, answer.statement, text);
+    }
+    const approved = applyModelExplanation(answer, '{"choice":"restate"}');
+    assert.equal(approved.mode, "on_device_explanation");
+    assert.equal(approved.explanation, RESTATE_EXPLANATION);
+    assert.equal(approved.statement, answer.statement);
+    const copied = formatAnswerText(approved);
+    assert.match(copied, /approved template/i);
+    assert.ok(!copied.includes("will close"));
+  });
+
+  it("shows both reports on comparison answers and keeps the original periods after a report switch", () => {
+    const latest = scored("Breckinridge");
+    const change = answerKnownIntent(latest, "What changed between these reports?", "revenue_change");
+    const changeRows = answerPeriodRows(change);
+    assert.equal(changeRows.length, 2);
+    assert.equal(changeRows[0]?.label, "Earlier report");
+    assert.equal(changeRows[1]?.label, "Selected report");
+    const lookup = answerKnownIntent(
+      latest,
+      "What was its net patient revenue for the selected fiscal period?",
+      "net_patient_revenue",
+    );
+    const lookupRows = answerPeriodRows(lookup);
+    assert.equal(lookupRows.length, 1);
+    assert.equal(lookupRows[0]?.label, "Fiscal period");
+    const earlier = latest.reports.find((report) => report.hospital.id !== latest.selectedReport?.hospital.id);
+    assert.ok(earlier);
+    const switched = scored("Breckinridge", earlier.hospital.id);
+    const switchedLookup = answerKnownIntent(
+      switched,
+      "What was its net patient revenue for the selected fiscal period?",
+      "net_patient_revenue",
+    );
+    assert.equal(lookup.periods[0]?.end, latest.selectedReport?.hospital.fiscalYearEnd);
+    assert.equal(switchedLookup.periods[0]?.end, earlier.hospital.fiscalYearEnd);
+    assert.notEqual(lookup.statement, switchedLookup.statement);
+    const exported = formatAnswerText(change);
+    assert.match(exported, /Earlier report:/);
+    assert.match(exported, /Selected report:/);
   });
 
   it("exports only selected completed answers", () => {
@@ -277,6 +379,9 @@ describe("PulseLine Ask retrieval", () => {
       assert.equal(exported.document.exportedAt, "2026-09-12");
       assert.match(exported.document.experimentalNote, /evidence notes/i);
       assert.ok(!JSON.stringify(exported.document).includes("hospital_year_reports"));
+      assert.equal(exported.document.answers[0]?.mode, complete.mode);
+      assert.ok(exported.document.answers[0]?.periodRows.length === 1);
+      assert.equal(exported.document.answers[0]?.explanation, null);
     }
   });
 

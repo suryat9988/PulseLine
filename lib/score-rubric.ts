@@ -89,7 +89,7 @@ export function buildScoreRubric(result: FinancialDistressResult): ScoreRubric {
     rounding: result.reconstruction.rounding,
     coverageNote: result.reconstruction.coverageNote,
     experimentalNote:
-      "Thresholds and weights are experimental assumptions in lib/scoring-config.ts. Effective weights change when factors are excluded.",
+      "Thresholds and weights are experimental assumptions. Effective weights change when factors are excluded.",
     notADealScore: SCORE_NOT,
   };
 }

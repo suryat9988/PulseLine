@@ -1,10 +1,15 @@
-import { EXPERIMENTAL_NOTE, type PulseAnswer } from "./types.ts";
+import { answerModeLabel, answerPeriodRows, compactPeriodLabel } from "./presentation.ts";
+import { EXPERIMENTAL_NOTE, type AnswerMode, type PulseAnswer } from "./types.ts";
 
 export interface ExportAnswer {
   question: string;
   statement: string;
   hospitalName: string;
   periodLabel: string | null;
+  periodRows: { label: string; value: string }[];
+  mode: AnswerMode;
+  modeLabel: string;
+  explanation: string | null;
   sources: { label: string; url: string | null; reportId: string | null }[];
   limitations: string[];
   kind: PulseAnswer["kind"];
@@ -43,7 +48,11 @@ export function buildExportDocument(
         question: answer.question,
         statement: answer.statement,
         hospitalName: answer.hospitalName,
-        periodLabel: answer.periodLabel,
+        periodLabel: compactPeriodLabel(answer),
+        periodRows: answerPeriodRows(answer),
+        mode: answer.mode,
+        modeLabel: answerModeLabel(answer.mode),
+        explanation: answer.mode === "on_device_explanation" ? answer.explanation : null,
         sources: answer.sources,
         limitations: answer.limitations,
         kind: answer.kind,
@@ -61,12 +70,18 @@ export function formatAnswerText(answer: PulseAnswer): string {
       return `${source.label}${report}${url}`;
     })
     .join("\n");
+  const periodRows = answerPeriodRows(answer);
+  const periods = periodRows.map((row) => `${row.label}: ${row.value}`).join("\n");
+  const calculations = answer.lockedFacts.length ? `Calculations:\n${answer.lockedFacts.join("\n")}` : null;
   return [
     `Hospital: ${answer.hospitalName}`,
-    answer.periodLabel ? `Period: ${answer.periodLabel}` : null,
+    periods ? `Reporting periods:\n${periods}` : answer.periodLabel ? `Period: ${answer.periodLabel}` : null,
     `Question: ${answer.question}`,
     `Answer: ${answer.statement}`,
+    answerModeLabel(answer.mode),
+    answer.mode === "on_device_explanation" && answer.explanation ? `Explanation: ${answer.explanation}` : null,
     `Kind: ${answer.kind.replaceAll("_", " ")}`,
+    calculations,
     answer.scenario
       ? [
           "Scenario assumptions:",
