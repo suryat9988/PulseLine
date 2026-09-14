@@ -2,18 +2,22 @@ import careEvidence from "../../../research/PulseLine_emergency_care_candidates.
 import { useEffect, useRef, useState } from "react";
 import type { ExplorerHospital } from "../../../lib/explorer/index.ts";
 import { areaFromCounty, allKentuckyArea } from "../../../lib/explorer/search.ts";
-import { KentuckyMap } from "../map/KentuckyMap.tsx";
+import { KY_COUNTIES, KentuckyMap } from "../map/KentuckyMap.tsx";
 
 const SERVICES = ["Emergency care", "Maternity", "Surgery", "Inpatient care"];
 
 /** Geographic exploration only until verified route and service observations are available. */
 export function CommunityImpact({ hospital, onClose }: { hospital: ExplorerHospital; onClose: () => void }) {
+  const countyMatches = KY_COUNTIES.filter((county) => hospital.countyFips
+    ? county.fips === hospital.countyFips
+    : county.name.toLowerCase() === hospital.county?.trim().toLowerCase());
+  const initialCounty = countyMatches.length === 1 ? countyMatches[0] : null;
   const [service, setService] = useState(SERVICES[0]);
   const [communities, setCommunities] = useState<{ fips: string; name: string }[]>(
-    hospital.countyFips && hospital.county ? [{ fips: hospital.countyFips, name: hospital.county }] : [],
+    initialCounty ? [initialCounty] : [],
   );
-  const [area, setArea] = useState(() => hospital.countyFips && hospital.county
-    ? areaFromCounty(hospital.countyFips, hospital.county) : allKentuckyArea());
+  const [area, setArea] = useState(() => initialCounty
+    ? areaFromCounty(initialCounty.fips, initialCounty.name) : allKentuckyArea());
   const evidence = service === "Emergency care"
     ? careEvidence.observations.find((item) => item.hospital_id === hospital.hospitalId) : undefined;
   const heading = useRef<HTMLHeadingElement>(null);
