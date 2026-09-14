@@ -20,4 +20,4 @@ A West Liberty demonstration could use the [city-government address at 565 Main 
 
 [Census geocoding documentation](https://www.census.gov/programs-surveys/geography/technical-documentation/complete-technical-documentation/census-geocoder.html) explains approximate address coordinates. [OSRM documentation](https://project-osrm.org/docs/v26.4.0/http) documents modeled road distance and travel duration; fastest-route mileage is not necessarily shortest mileage. No routing results are claimed here.
 
-The companion [JSON evidence file](PulseLine_emergency_care_candidates.json) preserves source URLs, scope, access dates, unknown publication dates and explicit uncalculated fields. These research files do not themselves update the application table.
+The companion [JSON evidence file](PulseLine_emergency_care_candidates.json) preserves source URLs, scope, access dates, unknown publication dates and explicit uncalculated fields. The community-impact table now reads this evidence for Emergency care. It displays source links, addresses and verification dates. Other service selections retain unknown status; route distances remain uncalculated.

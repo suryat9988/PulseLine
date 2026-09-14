@@ -1,3 +1,4 @@
+import careEvidence from "../../../research/PulseLine_emergency_care_candidates.json";
 import { useEffect, useRef, useState } from "react";
 import type { ExplorerHospital } from "../../../lib/explorer/index.ts";
 import { areaFromCounty, allKentuckyArea } from "../../../lib/explorer/search.ts";
@@ -13,6 +14,8 @@ export function CommunityImpact({ hospital, onClose }: { hospital: ExplorerHospi
   );
   const [area, setArea] = useState(() => hospital.countyFips && hospital.county
     ? areaFromCounty(hospital.countyFips, hospital.county) : allKentuckyArea());
+  const evidence = service === "Emergency care"
+    ? careEvidence.observations.find((item) => item.hospital_id === hospital.hospitalId) : undefined;
   const heading = useRef<HTMLHeadingElement>(null);
   useEffect(() => { heading.current?.focus(); }, []);
 
@@ -34,19 +37,34 @@ export function CommunityImpact({ hospital, onClose }: { hospital: ExplorerHospi
         {SERVICES.map((item) => <option key={item}>{item}</option>)}
       </select>
     </label>
+    {evidence ? <div className="impact-source-summary">
+      <h4>Verified emergency-service evidence</h4>
+      <p><a href={evidence.hospital.source_url} target="_blank" rel="noreferrer">{evidence.hospital.name}</a>: {evidence.hospital.service_evidence}.
+        {" "}<a href={evidence.hospital.address_source_url} target="_blank" rel="noreferrer">{evidence.hospital.address}</a></p>
+      <p className="tiny">Official website checked {evidence.hospital.accessed_at}. Publication date unknown. This verifies listed services, not spare capacity or equivalent specialist care.</p>
+    </div> : <p>No verified {service.toLowerCase()} comparison is available for this hospital yet.</p>}
     <p>Select counties on the map to add them to the assessment below. County boundaries are geographic context, not verified hospital service areas or affected communities.</p>
     <KentuckyMap hospitals={[hospital]} area={area} mapFocus={area.kind === "all" ? "kentucky" : "area"}
       selectedHospitalId={hospital.hospitalId} onSelectCounty={addCounty} onShowAll={() => setArea(allKentuckyArea())} />
     <p className="tiny">Map highlight: selected area to investigate. It does not indicate a measured loss of care. Verified hospital coordinates and community origins are not yet available for this scenario.</p>
     <h3>{service}: community travel assessment</h3>
-    <p>Each county is a starting area for research. Named communities and sourced representative starting points must be added before calculating routes.</p>
+    <p>Each county is a starting area for research. A candidate below is associated with the selected hospital; it has not been ranked for each community. Road routes and community origins still require verification.</p>
     <div className="impact-table-wrap">
       <table className="impact-table">
         <caption>Road miles and comparable-care verification by selected area</caption>
         <thead><tr><th scope="col">Area / community origin</th><th scope="col">Candidate alternative</th><th scope="col">Road miles to alternative</th><th scope="col">Additional miles</th><th scope="col">Drive time</th><th scope="col">Service verification</th><th scope="col">Manage</th></tr></thead>
         <tbody>{communities.map((community) => <tr key={community.fips}>
-          <th scope="row">{community.name} County<br /><small>Community origin not yet verified</small></th>
-          <td>Not yet verified</td><td>Not calculated</td><td>Not calculated</td><td>Not calculated</td><td>{service}: not yet verified</td>
+          <th scope="row">{community.name} County<br />
+            {hospital.hospitalId === "KY-LIC-600058" && community.fips === "21175"
+              ? <small>Proposed origin: West Liberty, <a href={careEvidence.proposed_origin.source_url} target="_blank" rel="noreferrer">565 Main Street</a>. Coordinates pending; not a county population center.</small>
+              : <small>Community origin not yet verified</small>}
+          </th>
+          <td>{evidence ? <>
+            <a href={evidence.candidate.source_url} target="_blank" rel="noreferrer">{evidence.candidate.name}</a><br />
+            <small><a href={evidence.candidate.address_source_url} target="_blank" rel="noreferrer">{evidence.candidate.address}</a><br />Research candidate; nearest option not established.</small>
+          </> : "No verified candidate for this service"}</td>
+          <td>Not calculated</td><td>Not calculated</td><td>Not calculated</td>
+          <td>{evidence ? <><a href={evidence.candidate.source_url} target="_blank" rel="noreferrer">Emergency care listed by candidate hospital</a><br /><small>Checked {evidence.candidate.accessed_at}. Comparable specialist capabilities and capacity unverified.</small></> : `${service}: not yet verified`}</td>
           <td><button type="button" className="text-link" aria-label={`Remove ${community.name} County`} onClick={() => setCommunities((items) => items.filter((item) => item.fips !== community.fips))}>Remove</button></td>
         </tr>)}</tbody>
       </table>
