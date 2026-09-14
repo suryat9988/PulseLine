@@ -1,3 +1,4 @@
+import { CommunityImpact } from "../impact/CommunityImpact.tsx";
 import { useMemo, useState } from "react";
 import {
   DATASET_SCOPE_NOTE,
@@ -28,6 +29,8 @@ export function HospitalExplorer({
   selectedId: string | null;
   onViewFinancials: (hospitalId: string) => void;
 }) {
+  const [impactId, setImpactId] = useState<string | null>(null);
+  const impactHospital = hospitals.find((hospital) => hospital.hospitalId === impactId);
   const [query, setQuery] = useState("");
   const [area, setArea] = useState(allKentuckyArea);
   const [mapFocus, setMapFocus] = useState<"kentucky" | "area" | "hospital">("kentucky");
@@ -134,8 +137,11 @@ export function HospitalExplorer({
           onVisibleIndex={setVisibleIndex}
           onViewFinancials={viewHospital}
           onOpenList={() => setListOpen(true)}
+          onViewImpact={setImpactId}
         />
       )}
+
+      {impactHospital ? <CommunityImpact key={impactHospital.hospitalId} hospital={impactHospital} onClose={() => setImpactId(null)} /> : null}
 
       {listOpen ? (
         <ResultsList

@@ -1,6 +1,6 @@
 # Community impact and comparable-care travel: approved product requirements
 
-Recorded September 14, 2026. Status: agreed research and engineering specification; not an implemented map or a verified impact dataset. No distances, affected populations, or closure probabilities are asserted here.
+Recorded September 14, 2026. Status: initial geographic exploration interface implemented; not a verified impact dataset. No distances, affected populations, or closure probabilities are asserted here.
 
 ## User experience
 
@@ -70,3 +70,9 @@ Before publishing a calculated first case:
 6. Expose evidence and methodology alongside results; display **Candidate alternative; capacity and appointment availability are not confirmed.**
 
 This feature assesses a hypothetical change in geographic access. It does not predict closure, establish a hospital catchment population, or demonstrate patient displacement.
+
+## Implementation status — September 14, 2026
+
+Every browsing card now has a View community impact action. The panel includes the existing county map, selectable assessment areas, a service selector, removable county rows, distance columns and methodology. County rows are explicitly research starting areas, not measured affected communities. No nearest alternative or mileage is asserted without evidence. The view is available locally; no GitHub push or deployment was performed for this implementation.
+
+Validation: 135 existing tests passed, production build passed, new/modified interface files passed targeted lint, and server rendering confirmed the initial map/table state. Repository-wide type checking and lint still report existing errors in HospitalWorkspace, AskPane and KentuckyMap. Browser interaction has not been visually verified.

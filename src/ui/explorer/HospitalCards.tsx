@@ -54,6 +54,7 @@ export function HospitalCards({
   onVisibleIndex,
   onViewFinancials,
   onOpenList,
+  onViewImpact,
 }: {
   cards: HospitalCardModel[];
   visibleIndex: number;
@@ -61,6 +62,7 @@ export function HospitalCards({
   onVisibleIndex: (index: number) => void;
   onViewFinancials: (hospitalId: string) => void;
   onOpenList: () => void;
+  onViewImpact: (hospitalId: string) => void;
 }) {
   const startX = useRef<number | null>(null);
   const index = clampIndex(visibleIndex, cards.length);
@@ -154,6 +156,9 @@ export function HospitalCards({
         ) : null}
         <button type="button" className="btn-primary" onClick={() => onViewFinancials(hospital.hospitalId)}>
           View financials
+        </button>
+        <button type="button" className="chip" onClick={() => onViewImpact(hospital.hospitalId)}>
+          View community impact
         </button>
       </article>
       <button type="button" className="text-link" onClick={onOpenList}>
